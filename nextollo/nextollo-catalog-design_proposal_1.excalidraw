@@ -5,8 +5,8 @@
   "elements": [
     {
       "type": "rectangle",
-      "version": 552,
-      "versionNonce": 1061778704,
+      "version": 553,
+      "versionNonce": 1601004816,
       "isDeleted": false,
       "id": "n-OKg-XkWKKWDOPHNte11",
       "fillStyle": "hachure",
@@ -32,14 +32,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685457487899,
+      "updated": 1685471119911,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 215,
-      "versionNonce": 1261557232,
+      "version": 216,
+      "versionNonce": 609432560,
       "isDeleted": false,
       "id": "ULymIGOuhYUaDtIYK1CK5",
       "fillStyle": "hachure",
@@ -58,7 +58,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578007,
+      "updated": 1685471119911,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -73,8 +73,8 @@
     },
     {
       "type": "rectangle",
-      "version": 334,
-      "versionNonce": 435339536,
+      "version": 335,
+      "versionNonce": 1688093456,
       "isDeleted": false,
       "id": "06ngFK9ja5Ctw5Jb5ig0e",
       "fillStyle": "hachure",
@@ -100,14 +100,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578007,
+      "updated": 1685471119911,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 225,
-      "versionNonce": 1147246576,
+      "version": 226,
+      "versionNonce": 1839674864,
       "isDeleted": false,
       "id": "lr5PlQjKlcTjRqbBlSkTj",
       "fillStyle": "hachure",
@@ -126,7 +126,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578008,
+      "updated": 1685471119911,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -141,8 +141,8 @@
     },
     {
       "type": "rectangle",
-      "version": 388,
-      "versionNonce": 1578639120,
+      "version": 389,
+      "versionNonce": 201548048,
       "isDeleted": false,
       "id": "EzIn3s7H_BGIFyD6MIGp3",
       "fillStyle": "hachure",
@@ -168,14 +168,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578008,
+      "updated": 1685471119911,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 277,
-      "versionNonce": 1179195888,
+      "version": 278,
+      "versionNonce": 824899568,
       "isDeleted": false,
       "id": "bj1mH6MqKA1FL-e0xLluj",
       "fillStyle": "hachure",
@@ -194,7 +194,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578008,
+      "updated": 1685471119911,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -209,8 +209,8 @@
     },
     {
       "type": "text",
-      "version": 224,
-      "versionNonce": 1910619408,
+      "version": 225,
+      "versionNonce": 85245712,
       "isDeleted": false,
       "id": "GtUI0qyLr2qUtckfZ9xR9",
       "fillStyle": "hachure",
@@ -229,7 +229,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578008,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -244,8 +244,8 @@
     },
     {
       "type": "rectangle",
-      "version": 259,
-      "versionNonce": 1676696560,
+      "version": 260,
+      "versionNonce": 317094384,
       "isDeleted": false,
       "id": "9QKUX_Scx9v9pkqoylfqI",
       "fillStyle": "solid",
@@ -266,14 +266,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578008,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 240,
-      "versionNonce": 1455921936,
+      "version": 241,
+      "versionNonce": 1347050768,
       "isDeleted": false,
       "id": "xiJdwt_egIMWemOtCKjgu",
       "fillStyle": "solid",
@@ -299,14 +299,14 @@
           "id": "NhyyGEx-OrkUlwj2PO-r3"
         }
       ],
-      "updated": 1685456578008,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 228,
-      "versionNonce": 257908208,
+      "version": 229,
+      "versionNonce": 1977727984,
       "isDeleted": false,
       "id": "NhyyGEx-OrkUlwj2PO-r3",
       "fillStyle": "solid",
@@ -325,7 +325,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578008,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -340,8 +340,8 @@
     },
     {
       "type": "text",
-      "version": 212,
-      "versionNonce": 524400912,
+      "version": 213,
+      "versionNonce": 521943824,
       "isDeleted": false,
       "id": "uDwbgq48DojETcSc27vf9",
       "fillStyle": "solid",
@@ -360,7 +360,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -375,8 +375,8 @@
     },
     {
       "type": "rectangle",
-      "version": 284,
-      "versionNonce": 966664176,
+      "version": 285,
+      "versionNonce": 472169968,
       "isDeleted": false,
       "id": "vc7czjfvkDZ1Mw0bWz2Ob",
       "fillStyle": "solid",
@@ -402,14 +402,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 270,
-      "versionNonce": 1321735952,
+      "version": 271,
+      "versionNonce": 872569104,
       "isDeleted": false,
       "id": "eyNOiDV6_JnQXaFuuu_my",
       "fillStyle": "solid",
@@ -439,14 +439,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 281,
-      "versionNonce": 1924440560,
+      "version": 282,
+      "versionNonce": 1186430960,
       "isDeleted": false,
       "id": "6Acw6DOKlS0Sz-5mbf7h0",
       "fillStyle": "solid",
@@ -465,7 +465,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -480,8 +480,8 @@
     },
     {
       "type": "text",
-      "version": 234,
-      "versionNonce": 970110224,
+      "version": 235,
+      "versionNonce": 1114945296,
       "isDeleted": false,
       "id": "Aw4fLWk9xlLQB-Z2dFGny",
       "fillStyle": "solid",
@@ -500,7 +500,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -515,8 +515,8 @@
     },
     {
       "type": "rectangle",
-      "version": 317,
-      "versionNonce": 162194416,
+      "version": 318,
+      "versionNonce": 1436680688,
       "isDeleted": false,
       "id": "rUEJlYjGfWPyZVVz3Pk7M",
       "fillStyle": "solid",
@@ -537,14 +537,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 298,
-      "versionNonce": 1708757776,
+      "version": 299,
+      "versionNonce": 1324045584,
       "isDeleted": false,
       "id": "DSTIE8_Lhtk3QhT8Zn5aV",
       "fillStyle": "solid",
@@ -570,14 +570,14 @@
           "id": "xDVDvg4t6VnW_2aRf4Zr6"
         }
       ],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 288,
-      "versionNonce": 747169264,
+      "version": 289,
+      "versionNonce": 1743537136,
       "isDeleted": false,
       "id": "xDVDvg4t6VnW_2aRf4Zr6",
       "fillStyle": "solid",
@@ -596,7 +596,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -611,8 +611,8 @@
     },
     {
       "type": "text",
-      "version": 270,
-      "versionNonce": 1767158032,
+      "version": 271,
+      "versionNonce": 249443088,
       "isDeleted": false,
       "id": "IwM-6rDjlLL0SGHZZUHIx",
       "fillStyle": "solid",
@@ -631,7 +631,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -646,8 +646,8 @@
     },
     {
       "type": "rectangle",
-      "version": 330,
-      "versionNonce": 139896816,
+      "version": 331,
+      "versionNonce": 2073970160,
       "isDeleted": false,
       "id": "XfYf31JnkYIeOyqdrewLt",
       "fillStyle": "solid",
@@ -668,14 +668,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 311,
-      "versionNonce": 1270615824,
+      "version": 312,
+      "versionNonce": 1220890896,
       "isDeleted": false,
       "id": "qEPhp7PVKpcGkh9mqdWJW",
       "fillStyle": "solid",
@@ -701,14 +701,14 @@
           "id": "j7AKmnBhV3_wkLqz_A37w"
         }
       ],
-      "updated": 1685456578009,
+      "updated": 1685471119912,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 325,
-      "versionNonce": 1763453424,
+      "version": 326,
+      "versionNonce": 230688752,
       "isDeleted": false,
       "id": "j7AKmnBhV3_wkLqz_A37w",
       "fillStyle": "solid",
@@ -727,7 +727,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119912,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -742,8 +742,8 @@
     },
     {
       "type": "text",
-      "version": 283,
-      "versionNonce": 1703390480,
+      "version": 284,
+      "versionNonce": 874032912,
       "isDeleted": false,
       "id": "m5k2vRVBaH48ANHAgCCU0",
       "fillStyle": "solid",
@@ -762,7 +762,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -777,8 +777,8 @@
     },
     {
       "type": "rectangle",
-      "version": 424,
-      "versionNonce": 1507945456,
+      "version": 425,
+      "versionNonce": 978946544,
       "isDeleted": false,
       "id": "W1IK3xptP0zOeSbBOibb5",
       "fillStyle": "solid",
@@ -804,14 +804,14 @@
           "id": "50Z4LAPhCCdMMpt28pjwC"
         }
       ],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 366,
-      "versionNonce": 1076857616,
+      "version": 367,
+      "versionNonce": 1498434832,
       "isDeleted": false,
       "id": "50Z4LAPhCCdMMpt28pjwC",
       "fillStyle": "solid",
@@ -830,7 +830,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -845,8 +845,8 @@
     },
     {
       "type": "rectangle",
-      "version": 505,
-      "versionNonce": 1152282096,
+      "version": 506,
+      "versionNonce": 1551027184,
       "isDeleted": false,
       "id": "4Q1bRwv3FLTWEgyONlP57",
       "fillStyle": "solid",
@@ -876,14 +876,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 522,
-      "versionNonce": 1982572816,
+      "version": 523,
+      "versionNonce": 1910778640,
       "isDeleted": false,
       "id": "AnZd2qW6s3RcrTtnSbJr2",
       "fillStyle": "solid",
@@ -902,7 +902,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -917,8 +917,8 @@
     },
     {
       "type": "rectangle",
-      "version": 576,
-      "versionNonce": 311111664,
+      "version": 577,
+      "versionNonce": 773049840,
       "isDeleted": false,
       "id": "UzCqLkUEj9eiaJsAVOgNV",
       "fillStyle": "solid",
@@ -948,14 +948,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 649,
-      "versionNonce": 317982480,
+      "version": 650,
+      "versionNonce": 1212958992,
       "isDeleted": false,
       "id": "vHEg7H3nwLlSe6w83E5JY",
       "fillStyle": "solid",
@@ -974,7 +974,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119913,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -989,8 +989,8 @@
     },
     {
       "type": "rectangle",
-      "version": 1141,
-      "versionNonce": 1266659824,
+      "version": 1142,
+      "versionNonce": 1749323760,
       "isDeleted": false,
       "id": "ltO3vv20kgfnDnIUXyg-_",
       "fillStyle": "solid",
@@ -1032,14 +1032,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578010,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 1183,
-      "versionNonce": 1929422096,
+      "version": 1184,
+      "versionNonce": 402695952,
       "isDeleted": false,
       "id": "-GS9ga9L3G-P1x7-CNxdN",
       "fillStyle": "solid",
@@ -1058,7 +1058,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -1073,8 +1073,8 @@
     },
     {
       "type": "arrow",
-      "version": 962,
-      "versionNonce": 915665904,
+      "version": 963,
+      "versionNonce": 1661800944,
       "isDeleted": false,
       "id": "YzailTFqgti4rSrBy2BvI",
       "fillStyle": "solid",
@@ -1095,7 +1095,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685456578010,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -1124,8 +1124,8 @@
     },
     {
       "type": "arrow",
-      "version": 1098,
-      "versionNonce": 600408848,
+      "version": 1099,
+      "versionNonce": 1836664080,
       "isDeleted": false,
       "id": "P7eaQu3t4VGaNFapftbc3",
       "fillStyle": "solid",
@@ -1146,7 +1146,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -1175,8 +1175,8 @@
     },
     {
       "type": "arrow",
-      "version": 1120,
-      "versionNonce": 2043672048,
+      "version": 1121,
+      "versionNonce": 896881648,
       "isDeleted": false,
       "id": "uoyW70Grwc74C2ADaKu2R",
       "fillStyle": "solid",
@@ -1197,7 +1197,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -1226,8 +1226,8 @@
     },
     {
       "type": "rectangle",
-      "version": 398,
-      "versionNonce": 1137090832,
+      "version": 399,
+      "versionNonce": 103686928,
       "isDeleted": false,
       "id": "syjAZEyDnd0nAbn_v1B3d",
       "fillStyle": "solid",
@@ -1253,14 +1253,14 @@
           "id": "v-4epW4XjeQyhYhOp5Ee8"
         }
       ],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 376,
-      "versionNonce": 976992240,
+      "version": 377,
+      "versionNonce": 1434801648,
       "isDeleted": false,
       "id": "v-4epW4XjeQyhYhOp5Ee8",
       "fillStyle": "solid",
@@ -1279,7 +1279,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -1294,8 +1294,8 @@
     },
     {
       "type": "arrow",
-      "version": 1020,
-      "versionNonce": 1651506960,
+      "version": 1021,
+      "versionNonce": 815218960,
       "isDeleted": false,
       "id": "H0kGeP4jDC5nD6Q68VlRP",
       "fillStyle": "solid",
@@ -1316,7 +1316,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -1345,8 +1345,8 @@
     },
     {
       "type": "rectangle",
-      "version": 325,
-      "versionNonce": 1004485104,
+      "version": 326,
+      "versionNonce": 944052208,
       "isDeleted": false,
       "id": "AsxidoR7l5d0HBnvmryox",
       "fillStyle": "cross-hatch",
@@ -1372,14 +1372,14 @@
           "id": "ONDokfX_pxOr_RNID0Wdf"
         }
       ],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 320,
-      "versionNonce": 1614650640,
+      "version": 321,
+      "versionNonce": 741121808,
       "isDeleted": false,
       "id": "ONDokfX_pxOr_RNID0Wdf",
       "fillStyle": "solid",
@@ -1398,7 +1398,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -1413,8 +1413,8 @@
     },
     {
       "type": "rectangle",
-      "version": 1066,
-      "versionNonce": 29522928,
+      "version": 1067,
+      "versionNonce": 1908185584,
       "isDeleted": false,
       "id": "WmAX9iWZ2Vbc5-g6R7cmm",
       "fillStyle": "solid",
@@ -1435,14 +1435,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 803,
-      "versionNonce": 1319598864,
+      "version": 804,
+      "versionNonce": 157695248,
       "isDeleted": false,
       "id": "iyIXccNoJwg5hxbmQ5lzW",
       "fillStyle": "solid",
@@ -1463,14 +1463,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 220,
-      "versionNonce": 1844280816,
+      "version": 312,
+      "versionNonce": 1552943376,
       "isDeleted": false,
       "id": "Y04yi1n6x9vCnwZESmCcZ",
       "fillStyle": "solid",
@@ -1479,8 +1479,8 @@
       "roughness": 1,
       "opacity": 10,
       "angle": 0,
-      "x": 1768.9520850774195,
-      "y": -365.6010418776775,
+      "x": 1768.5324942405548,
+      "y": -380.3016178840335,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "#e6fcf5",
       "width": 286.49156358507,
@@ -1496,14 +1496,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578011,
+      "updated": 1685471243835,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 354,
-      "versionNonce": 1344641296,
+      "version": 355,
+      "versionNonce": 163322640,
       "isDeleted": false,
       "id": "WdYaLPij8nCkjbbY_2wFE",
       "fillStyle": "cross-hatch",
@@ -1533,14 +1533,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578011,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 348,
-      "versionNonce": 1634222064,
+      "version": 349,
+      "versionNonce": 334683632,
       "isDeleted": false,
       "id": "YqfYg-xaXSSmI3kJVZFi2",
       "fillStyle": "solid",
@@ -1559,7 +1559,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578012,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -1574,8 +1574,8 @@
     },
     {
       "type": "text",
-      "version": 1757,
-      "versionNonce": 2016409360,
+      "version": 1758,
+      "versionNonce": 2141600016,
       "isDeleted": false,
       "id": "CSdZ5MknQPbCnU3FvrOrM",
       "fillStyle": "hachure",
@@ -1594,7 +1594,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578012,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 16,
@@ -1609,8 +1609,8 @@
     },
     {
       "type": "rectangle",
-      "version": 576,
-      "versionNonce": 1547354608,
+      "version": 577,
+      "versionNonce": 1606524912,
       "isDeleted": false,
       "id": "diCwN7ArBWbxi812O8h7l",
       "fillStyle": "solid",
@@ -1636,14 +1636,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685456578012,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 1830,
-      "versionNonce": 725521680,
+      "version": 1831,
+      "versionNonce": 782014224,
       "isDeleted": false,
       "id": "6y53uFgbM7XjZgFE-BE8K",
       "fillStyle": "hachure",
@@ -1662,7 +1662,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578012,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 16,
@@ -1677,8 +1677,8 @@
     },
     {
       "type": "text",
-      "version": 756,
-      "versionNonce": 1360676624,
+      "version": 757,
+      "versionNonce": 141042160,
       "isDeleted": false,
       "id": "vrZ0d5yoRsZmNlDGqnbw2",
       "fillStyle": "solid",
@@ -1697,7 +1697,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685458397629,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 28,
@@ -1712,8 +1712,8 @@
     },
     {
       "type": "text",
-      "version": 3932,
-      "versionNonce": 1639264240,
+      "version": 4139,
+      "versionNonce": 973797648,
       "isDeleted": false,
       "id": "Oy9khBDc3kf76dmNQKyoA",
       "fillStyle": "solid",
@@ -1727,28 +1727,28 @@
       "strokeColor": "#1e1e1e",
       "backgroundColor": "#e7f5ff",
       "width": 945.2193603515625,
-      "height": 800,
+      "height": 825,
       "seed": 986787444,
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685458423613,
+      "updated": 1685471237291,
       "link": null,
       "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "- Per project, we create a separate catalog in Unity Catalog\n    - For now, we would end up with <= 200 catalogs (see key metrics)\n    - Alternative: Create dev,int & prod catalog per project if needed (on demand)\n        - Here, we would end up with <= 600 catalogs overall\nRecommendation: Introduction of a common nomenclature for schema & table\n  names across projects\n- Storage locations:\n    - Refinement & Analytics Layer:\n        - We let users create their own schemas within the project related catalogs\n        - Managed Tables: \n            - The default storage container of UC metastore is not reachable from\n              EAWorkspaces.\n            - Hence, we introduce a single ext. location that is used to store managed tables.\n              The associated storage account will be located in the infra. subscription of\n              the neXtollo team (see figure below).\n            - During catalog creation, we map every catalog to the mentioned ext. location\n            - For an alternative, please see green box in the lower right\n        - External Tables / Arbitrary files: Create a project specific external\n          location if needed (on demand per project)\n            - The ext. location can be mapped to a project/department specific\n              storage account/container\n            - Important: In the current infrastructure setup, it is not possible\n              to create Azure resources on project level. Therefore, the alternative is\n              to create ext. locations on EAWorkspace level. Here, the implication is\n              an significant increase in the number of external locations. However, with\n              the new quota limit, this shouldn't be an issue.\n    -  Data Lake\n        - As of now, there are ~20-50x storage accounts with source data\n            - Recommendation: Introduction of a top-level 'default' container\n        - We need to create <= 50 ext. locations in UC for being able\n          to access the source data from within the DBX WS\n    - Overall, we would create <= 250 ext. locations with this setup",
+      "text": "- Per project, we create a separate catalog in Unity Catalog\n    - For now, we would end up with <= 200 catalogs (see key metrics)\n    - Alternative: Create dev,int & prod catalog per project if needed (on demand)\n        - Here, we would end up with <= 600 catalogs overall\n- Per project specific catalog, we let Workspace Admins create their own schemas\n    - DBX users can request a new schema from the respective workspace admin\nRecommendation: Introduction of a common nomenclature for schema & table\n  names across projects\n- Storage locations:\n    - Refinement & Analytics Layer:\n        - Managed Tables: \n            - The default storage container of UC metastore is not reachable from\n              EAWorkspaces.\n            - Hence, we introduce a single ext. location that is used to store managed tables.\n              The associated storage account will be located in the infra. subscription of\n              the neXtollo team (see figure below).\n            - During catalog creation, we map every catalog to the mentioned ext. location\n            - For an alternative, please see green box in the lower right\n        - External Tables / Arbitrary files: Create a project specific external\n          location if needed (on demand per project)\n            - The ext. location can be mapped to a project/department specific\n              storage account/container\n            - Important: In the current infrastructure setup, it is not possible\n              to create Azure resources on project level. Therefore, the alternative is\n              to create ext. locations on EAWorkspace level. Here, the implication is\n              an significant increase in the number of external locations. However, with\n              the new quota limit, this shouldn't be an issue.\n    -  Data Lake\n        - As of now, there are ~20-50x storage accounts with source data\n            - Recommendation: Introduction of a top-level 'default' container\n        - We need to create <= 50 ext. locations in UC for being able\n          to access the source data from within the DBX WS\n    - Overall, we would create <= 250 ext. locations with this setup",
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "- Per project, we create a separate catalog in Unity Catalog\n    - For now, we would end up with <= 200 catalogs (see key metrics)\n    - Alternative: Create dev,int & prod catalog per project if needed (on demand)\n        - Here, we would end up with <= 600 catalogs overall\nRecommendation: Introduction of a common nomenclature for schema & table\n  names across projects\n- Storage locations:\n    - Refinement & Analytics Layer:\n        - We let users create their own schemas within the project related catalogs\n        - Managed Tables: \n            - The default storage container of UC metastore is not reachable from\n              EAWorkspaces.\n            - Hence, we introduce a single ext. location that is used to store managed tables.\n              The associated storage account will be located in the infra. subscription of\n              the neXtollo team (see figure below).\n            - During catalog creation, we map every catalog to the mentioned ext. location\n            - For an alternative, please see green box in the lower right\n        - External Tables / Arbitrary files: Create a project specific external\n          location if needed (on demand per project)\n            - The ext. location can be mapped to a project/department specific\n              storage account/container\n            - Important: In the current infrastructure setup, it is not possible\n              to create Azure resources on project level. Therefore, the alternative is\n              to create ext. locations on EAWorkspace level. Here, the implication is\n              an significant increase in the number of external locations. However, with\n              the new quota limit, this shouldn't be an issue.\n    -  Data Lake\n        - As of now, there are ~20-50x storage accounts with source data\n            - Recommendation: Introduction of a top-level 'default' container\n        - We need to create <= 50 ext. locations in UC for being able\n          to access the source data from within the DBX WS\n    - Overall, we would create <= 250 ext. locations with this setup",
+      "originalText": "- Per project, we create a separate catalog in Unity Catalog\n    - For now, we would end up with <= 200 catalogs (see key metrics)\n    - Alternative: Create dev,int & prod catalog per project if needed (on demand)\n        - Here, we would end up with <= 600 catalogs overall\n- Per project specific catalog, we let Workspace Admins create their own schemas\n    - DBX users can request a new schema from the respective workspace admin\nRecommendation: Introduction of a common nomenclature for schema & table\n  names across projects\n- Storage locations:\n    - Refinement & Analytics Layer:\n        - Managed Tables: \n            - The default storage container of UC metastore is not reachable from\n              EAWorkspaces.\n            - Hence, we introduce a single ext. location that is used to store managed tables.\n              The associated storage account will be located in the infra. subscription of\n              the neXtollo team (see figure below).\n            - During catalog creation, we map every catalog to the mentioned ext. location\n            - For an alternative, please see green box in the lower right\n        - External Tables / Arbitrary files: Create a project specific external\n          location if needed (on demand per project)\n            - The ext. location can be mapped to a project/department specific\n              storage account/container\n            - Important: In the current infrastructure setup, it is not possible\n              to create Azure resources on project level. Therefore, the alternative is\n              to create ext. locations on EAWorkspace level. Here, the implication is\n              an significant increase in the number of external locations. However, with\n              the new quota limit, this shouldn't be an issue.\n    -  Data Lake\n        - As of now, there are ~20-50x storage accounts with source data\n            - Recommendation: Introduction of a top-level 'default' container\n        - We need to create <= 50 ext. locations in UC for being able\n          to access the source data from within the DBX WS\n    - Overall, we would create <= 250 ext. locations with this setup",
       "lineHeight": 1.25,
-      "baseline": 793
+      "baseline": 818
     },
     {
       "type": "text",
-      "version": 1648,
-      "versionNonce": 1124533744,
+      "version": 1726,
+      "versionNonce": 2065485808,
       "isDeleted": false,
       "id": "6uZYStk5YmMW6GgKC5_dz",
       "fillStyle": "hachure",
@@ -1757,8 +1757,8 @@
       "roughness": 1,
       "opacity": 100,
       "angle": 0,
-      "x": 1770.057278321505,
-      "y": -346.90981364688315,
+      "x": 1769.6376874846403,
+      "y": -361.6103896532391,
       "strokeColor": "#000000",
       "backgroundColor": "transparent",
       "width": 272.8478698730469,
@@ -1766,13 +1766,8 @@
       "seed": 204355316,
       "groupIds": [],
       "roundness": null,
-      "boundElements": [
-        {
-          "id": "O2ncy_5384s2fnSx_NJkw",
-          "type": "arrow"
-        }
-      ],
-      "updated": 1685456578014,
+      "boundElements": [],
+      "updated": 1685471243835,
       "link": null,
       "locked": false,
       "fontSize": 16,
@@ -1787,8 +1782,8 @@
     },
     {
       "type": "arrow",
-      "version": 1093,
-      "versionNonce": 1616176112,
+      "version": 1758,
+      "versionNonce": 1842112272,
       "isDeleted": false,
       "id": "O2ncy_5384s2fnSx_NJkw",
       "fillStyle": "solid",
@@ -1797,26 +1792,26 @@
       "roughness": 1,
       "opacity": 100,
       "angle": 0,
-      "x": 1664.483437656911,
-      "y": -250.98663185856418,
+      "x": 1607.9779641482378,
+      "y": -421.4581928555792,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "#e7f5ff",
-      "width": 82.35764386002143,
-      "height": 46.104451436066995,
+      "width": 154.71777507526235,
+      "height": 69.61861292338335,
       "seed": 969311476,
       "groupIds": [],
       "roundness": {
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685458404586,
+      "updated": 1685471244888,
       "link": null,
       "locked": false,
       "startBinding": null,
       "endBinding": {
-        "elementId": "6uZYStk5YmMW6GgKC5_dz",
-        "focus": 0.7299860461276793,
-        "gap": 23.21619680457252
+        "elementId": "Y04yi1n6x9vCnwZESmCcZ",
+        "focus": -0.13247290839534595,
+        "gap": 5.836755017054543
       },
       "lastCommittedPoint": null,
       "startArrowhead": null,
@@ -1827,15 +1822,15 @@
           0
         ],
         [
-          82.35764386002143,
-          -46.104451436066995
+          154.71777507526235,
+          69.61861292338335
         ]
       ]
     },
     {
       "type": "rectangle",
-      "version": 428,
-      "versionNonce": 1779484656,
+      "version": 429,
+      "versionNonce": 190604784,
       "isDeleted": false,
       "id": "BZmk6LPCB8xHTdOzoSUPM",
       "fillStyle": "solid",
@@ -1856,14 +1851,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578014,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "rectangle",
-      "version": 277,
-      "versionNonce": 305393424,
+      "version": 278,
+      "versionNonce": 863580432,
       "isDeleted": false,
       "id": "Q5jrU0DXb097sOmNUQumi",
       "fillStyle": "solid",
@@ -1884,14 +1879,14 @@
         "type": 3
       },
       "boundElements": [],
-      "updated": 1685456578014,
+      "updated": 1685471119914,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 1148,
-      "versionNonce": 1318210032,
+      "version": 1149,
+      "versionNonce": 1085941744,
       "isDeleted": false,
       "id": "v8_3Rv2jOa2wCciuiUQaO",
       "fillStyle": "hachure",
@@ -1910,7 +1905,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578014,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 16,
@@ -1925,8 +1920,8 @@
     },
     {
       "type": "arrow",
-      "version": 763,
-      "versionNonce": 1375964432,
+      "version": 764,
+      "versionNonce": 1565560592,
       "isDeleted": false,
       "id": "0Y1cqF_rHHHvE1NUU5ikX",
       "fillStyle": "solid",
@@ -1947,7 +1942,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685456578014,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "startBinding": null,
@@ -1972,8 +1967,8 @@
     },
     {
       "type": "text",
-      "version": 1503,
-      "versionNonce": 1804831728,
+      "version": 1504,
+      "versionNonce": 1225763312,
       "isDeleted": false,
       "id": "cS6mJpFDjzkQmn7m84Gzw",
       "fillStyle": "solid",
@@ -1992,7 +1987,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578014,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -2007,8 +2002,8 @@
     },
     {
       "type": "text",
-      "version": 2692,
-      "versionNonce": 1915710224,
+      "version": 2693,
+      "versionNonce": 1351363856,
       "isDeleted": false,
       "id": "lPBhEzKRoML0Cu_GfRo1K",
       "fillStyle": "solid",
@@ -2027,7 +2022,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578015,
+      "updated": 1685471119914,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -2042,8 +2037,8 @@
     },
     {
       "type": "text",
-      "version": 280,
-      "versionNonce": 454856176,
+      "version": 281,
+      "versionNonce": 1868884976,
       "isDeleted": false,
       "id": "pv80Aaa2uX5tZoN84zIkE",
       "fillStyle": "hachure",
@@ -2062,7 +2057,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685456578015,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -2077,8 +2072,8 @@
     },
     {
       "type": "rectangle",
-      "version": 766,
-      "versionNonce": 1628538640,
+      "version": 767,
+      "versionNonce": 1453591312,
       "isDeleted": false,
       "id": "axVzqukKdPp50gjqJoe2C",
       "fillStyle": "hachure",
@@ -2104,14 +2099,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685457498960,
+      "updated": 1685471119915,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 506,
-      "versionNonce": 264139760,
+      "version": 507,
+      "versionNonce": 1572990448,
       "isDeleted": false,
       "id": "6ZXTqxantqlkjFRfJsTWk",
       "fillStyle": "hachure",
@@ -2130,7 +2125,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685457498961,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -2145,8 +2140,8 @@
     },
     {
       "type": "rectangle",
-      "version": 643,
-      "versionNonce": 1317110256,
+      "version": 644,
+      "versionNonce": 1242573072,
       "isDeleted": false,
       "id": "td46oUu6l6IN50_15eWUy",
       "fillStyle": "solid",
@@ -2180,14 +2175,14 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685457507409,
+      "updated": 1685471119915,
       "link": null,
       "locked": false
     },
     {
       "type": "text",
-      "version": 660,
-      "versionNonce": 717633520,
+      "version": 661,
+      "versionNonce": 1026469872,
       "isDeleted": false,
       "id": "o5IFQO9SyuFgVegvoT-6f",
       "fillStyle": "solid",
@@ -2206,7 +2201,7 @@
       "groupIds": [],
       "roundness": null,
       "boundElements": [],
-      "updated": 1685457498961,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "fontSize": 20,
@@ -2221,8 +2216,8 @@
     },
     {
       "type": "arrow",
-      "version": 313,
-      "versionNonce": 1113625584,
+      "version": 314,
+      "versionNonce": 1984464656,
       "isDeleted": false,
       "id": "nyAQInQCB_RNPFvMhu-Dv",
       "fillStyle": "hachure",
@@ -2243,7 +2238,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685457505059,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -2272,8 +2267,8 @@
     },
     {
       "type": "arrow",
-      "version": 443,
-      "versionNonce": 1185329936,
+      "version": 444,
+      "versionNonce": 1437807088,
       "isDeleted": false,
       "id": "PuWEJBnBk8A64a0GSFGQ6",
       "fillStyle": "hachure",
@@ -2294,7 +2289,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1685457509016,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "startBinding": {
@@ -2341,8 +2336,8 @@
         "type": 3
       },
       "seed": 1725522704,
-      "version": 45,
-      "versionNonce": 1424347120,
+      "version": 46,
+      "versionNonce": 2009408784,
       "isDeleted": false,
       "boundElements": [
         {
@@ -2350,7 +2345,7 @@
           "type": "arrow"
         }
       ],
-      "updated": 1685458278318,
+      "updated": 1685471119915,
       "link": null,
       "locked": false
     },
@@ -2374,11 +2369,11 @@
         "type": 2
       },
       "seed": 1301820400,
-      "version": 153,
-      "versionNonce": 1489489168,
+      "version": 154,
+      "versionNonce": 777483248,
       "isDeleted": false,
       "boundElements": null,
-      "updated": 1685457750171,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "points": [
@@ -2410,7 +2405,7 @@
       "type": "text",
       "x": 1706.3392364815948,
       "y": 744.4556214477255,
-      "width": 152.57192993164062,
+      "width": 873.599609375,
       "height": 35,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -2423,21 +2418,21 @@
       "groupIds": [],
       "roundness": null,
       "seed": 1732681712,
-      "version": 87,
-      "versionNonce": 749314544,
+      "version": 150,
+      "versionNonce": 469631760,
       "isDeleted": false,
       "boundElements": null,
-      "updated": 1685457887604,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
-      "text": "Alternative",
+      "text": "Alternative to a SA in the neXtollo infrastructure subscription",
       "fontSize": 28,
       "fontFamily": 1,
       "textAlign": "left",
       "verticalAlign": "top",
       "baseline": 25,
       "containerId": null,
-      "originalText": "Alternative",
+      "originalText": "Alternative to a SA in the neXtollo infrastructure subscription",
       "lineHeight": 1.25
     },
     {
@@ -2458,11 +2453,11 @@
       "groupIds": [],
       "roundness": null,
       "seed": 918346000,
-      "version": 1732,
-      "versionNonce": 1208582640,
+      "version": 1733,
+      "versionNonce": 757298672,
       "isDeleted": false,
       "boundElements": null,
-      "updated": 1685458582165,
+      "updated": 1685471119915,
       "link": null,
       "locked": false,
       "text": "- Aim: Leverage ADLS SAs from EAWorkspaces for storing managed tables instead of introducing an\nSA in the nextollo infrastructure subscription\n- We still create for every project a catalog, but we don't assign a managed location to a catalog\n- Instead, we create for every EAWorkspace an external location, which is used to store managed\n  tables.\n    - The ext. location is mapped to one of the ADLS SAs within the respective EAWorkspace\n- We grant to the Databricks Workspace Admins the \"CREATE MANAGED STORAGE\" privilege on the\n  mentioned ext. location and the \"CREATE SCHEMA\" privilege under the project's catalog\n- Now, the DBX Workspace Admin got enabled to create necessary schemas, which are mapped to the\next. location\n- Regular DBX Workspaces users can be equipped with CREATE TABLE privileges by the workspace\nadmin with which they can create managed tables.\n\n\nWe would create additional ~300 ext. locations with this setup,\nwhich results in <= 550 ext. locations.\n",
