@@ -1,0 +1,34 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC ### Set widgets and get their values
+
+# COMMAND ----------
+
+dbutils.widgets.removeAll()
+dbutils.widgets.text("source_schema", "", "Source Schema")
+dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
+dbutils.widgets.text("target_schema", "", "Target UC Schema")
+
+# COMMAND ----------
+
+source_schema = dbutils.widgets.get("source_schema")
+target_catalog = dbutils.widgets.get("target_catalog")
+target_schema = dbutils.widgets.get("target_schema")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Import modules
+
+# COMMAND ----------
+
+from utils.table_utils import sync_hms_schema_to_uc_schema
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Using the SYNC TABLE command to upgrade individual HMS external table (source_table) to external table in Unity Catalog.
+
+# COMMAND ----------
+
+sync_hms_schema_to_uc_schema(spark, source_schema, target_catalog, target_schema)
