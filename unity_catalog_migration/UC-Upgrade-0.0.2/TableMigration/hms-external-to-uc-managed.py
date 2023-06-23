@@ -130,6 +130,3 @@ tables = source_catalog_tables.collect()
 for table in tables:
     print(f"Converting table {table[0]}.{table[1]}...")
     spark.sql(f"CREATE OR REPLACE TABLE `{destination_catalog}`.{table[0]}.{table[1]} DEEP CLONE {source_catalog}.{table[0]}.{table[1]}")
-
-# COMMAND ----------
-

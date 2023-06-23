@@ -27,7 +27,7 @@ table_type = "EXTERNAL"
 
 # COMMAND ----------
 
-from utils.table_utils import (get_hms_table_description, get_mounted_tables_dict,   check_mountpoint_existance_as_externallocation,                              migrate_hms_external_table_to_uc_external)
+from utils.table_utils import (get_hms_table_description, get_mounted_tables_dict, check_mountpoint_existance_as_externallocation,                              migrate_hms_external_table_to_uc_external)
 
 # COMMAND ----------
 
