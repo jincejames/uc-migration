@@ -8,7 +8,7 @@ import pyspark.sql.utils as U
 
 def get_hms_table_description(spark: SparkSession, source_schema: str, source_table: str, table_type: str) -> list:
   """
-  Get the Descriptions of HMS tables
+  Get the Descriptions of HMS tables to a list
   
   Parameters:
     spark: Active SparkSession
@@ -20,33 +20,38 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
     The list of dictionaries of the tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
   """
 
-  if not source_schema:
-    raise ValueError("Source Schema is empty")
+  try:
 
-  # Set hive_metastore variables
-  hms_catalog = "hive_metastore"
-  hms_schema = source_schema
-  hms_table = source_table
+    if not table_type:
+      raise ValueError("Source table type is empty")
+    elif not table_type.upper() in ["EXTERNAL", "MANAGED"]:
+      raise ValueError("Source table type should be either EXTERNAL or MANAGED")
+    if not source_schema:
+      raise ValueError("Source Schema is empty")
 
-  # List variable for table descriptions
-  table_descriptions = []
+    # Set hive_metastore variables
+    hms_catalog = "hive_metastore"
+    hms_schema = source_schema
+    hms_table = source_table
 
-  if not hms_table:
-    # Read all tables in the given schema to DataFrame
-    hms_tables = (spark
-                  .sql(f"show tables in {hms_catalog}.{hms_schema}")
-                  .select("tableName")
-                  )
-    # Get all tables from Hive Metastore for the given hive_metastore schema
-    tables = list(map(lambda r: r.tableName, hms_tables.collect()))
-  else:
-    # Set the given HMS table
-    tables = [f"{hms_table}"]
+    # List variable for table descriptions
+    table_descriptions = []
 
-  # Loop through each table and run the describe command
-  for table in tables:
-      table_name = table
-      try:
+    if not hms_table:
+      # Read all tables in the given schema to DataFrame
+      hms_tables = (spark
+                    .sql(f"show tables in {hms_catalog}.{hms_schema}")
+                    .select("tableName")
+                    )
+      # Get all tables from Hive Metastore for the given hive_metastore schema
+      tables = list(map(lambda r: r.tableName, hms_tables.collect()))
+    else:
+      # Set the given HMS table
+      tables = [f"{hms_table}"]
+
+    # Loop through each table and run the describe command
+    for table in tables:
+        table_name = table
         # Read the Table description into DataFrame
         desc_df = (spark
                   .sql(f"DESCRIBE FORMATTED {hms_catalog}.{hms_schema}.{table_name}")
@@ -62,12 +67,11 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
         # Append the table_descriptions list with the values
           table_descriptions.append(desc_dict)
       
-      except (ValueError, U.AnalysisException) as e:
-        print(f"Error on {hms_catalog}.{hms_schema}.{table_name}.")
-        if isinstance(e, ValueError):
-          raise ValueError(f"ValueError occurred: {e}")
-        elif isinstance(e, U.AnalysisException):
-          raise U.AnalysisException(f"AnalysisException occurred: {e}")
+  except (ValueError, U.AnalysisException) as e:
+    if isinstance(e, ValueError):
+      raise ValueError(f"ValueError occurred: {e}")
+    elif isinstance(e, U.AnalysisException):
+      raise U.AnalysisException(f"AnalysisException occurred: {e}")
   return table_descriptions
 
 
@@ -81,6 +85,12 @@ def get_mounted_tables_dict(table_descriptions: list) -> list:
   Returns:
     The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
   """
+  try:
+    if not table_descriptions:
+      raise ValueError("table_descriptions is empty")
+  except ValueError as e:
+    print(f"ValueError occurred: {e}")
+    raise e
   return [d for d in table_descriptions if "/mnt" in d["Location"]]
   
 
@@ -95,48 +105,51 @@ def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils:
   """
   # Get the mounts
   mounts = dbutils.fs.mounts()
+  try:
+    if not mounted_descriptions:
+      raise ValueError("mounted_descriptions is empty")
   # Iterate through the list of mounted tables' descriptions
-  for r in mounted_descriptions:
-    try:
-      # Get the table's mounted path
-      mount_table_path = r["Location"]
-      mount_table = r["Table"]
+    for r in mounted_descriptions:
+        # Get the table's mounted path
+        mount_table_path = r["Location"]
+        mount_table = r["Table"]
 
-      # Get the mount point and mount source (path) if the table location exists as mount source (path) and it is not a DatabricksRoot path
-      mount_point, mount_source = zip(*[(mount.mountPoint, mount.source) for mount in mounts if (mount.mountPoint in mount_table_path and mount.source != "DatabricksRoot")])
+        # Get the mount point and mount source (path) if the table location exists as mount source (path) and it is not a DatabricksRoot path
+        mount_point, mount_source = zip(*[(mount.mountPoint, mount.source) for mount in mounts if (mount.mountPoint in mount_table_path and mount.source != "DatabricksRoot")])
 
-      # Read the external locations to DataFrame
-      external_loc_df = (spark
-                         .sql("SHOW EXTERNAL LOCATIONS")
-                         )
-      # Get the external location name and url if the url part of any mount source (path)
-      external_loc_name, external_loc_url = zip(*[(e.name, e.url) for e in external_loc_df.collect() if mount_source[0] in e.url])
+        # Read the external locations to DataFrame
+        external_loc_df = (spark
+                          .sql("SHOW EXTERNAL LOCATIONS")
+                          )
+        # Get the external location name and url if the url part of any mount source (path)
+        external_loc_name, external_loc_url = zip(*[(e.name, e.url) for e in external_loc_df.collect() if mount_source[0] in e.url])
 
-      # Check whether there is only a single external location for the existing mount point
-      if len(external_loc_name) > 1:
-        raise ValueError(f"There are more then 1 External location: {external_loc_name}. Please check which is needed.")
+        # Check whether there is only a single external location for the existing mount point
+        if len(external_loc_name) > 1:
+          raise ValueError(f"There are more then 1 External location: {external_loc_name}. Please check which is needed.")
 
 
-      common_prefix = commonprefix([mount_source[0], external_loc_url[0]])
-      mount_source_folder = mount_source[0][len(common_prefix):]
-      external_loc_folder = external_loc_url[0][len(common_prefix):]
-      
-      # Check whether the external location url is part of the mount source (path) if not raise ValueError
-      if mount_source[0] == external_loc_url[0]:
-        print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has an External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
-      elif mount_source[0]  == common_prefix:
-        print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has a common prefix {common_prefix} with External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
-        if external_loc_folder and (external_loc_folder in mount_table_path):
-          print(f"External location folder {external_loc_folder} exists in the table {mount_table} mount path {mount_table_path}")
-      elif external_loc_url[0] == common_prefix:
-        print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has a common prefix {common_prefix} with External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
-        if mount_folder and mount_folder in external_loc_url[0]:
-          print(f"Mount point folder {mount_source_folder} exists in External Location {external_loc_url[0]}")
-      else:
-        raise ValueError(f"Mount point: {mount_point[0]} with source path {mount_source[0]} doesn't part of the external location {external_loc_namel[0]} with path {external_loc_url[0]}")
+        common_prefix = commonprefix([mount_source[0], external_loc_url[0]])
+        mount_source_folder = mount_source[0][len(common_prefix):]
+        external_loc_folder = external_loc_url[0][len(common_prefix):]
+        
+        # Check whether the external location url is part of the mount source (path) if not raise ValueError
+        if mount_source[0] == external_loc_url[0]:
+          print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has an External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
+        elif mount_source[0]  == common_prefix:
+          print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has a common prefix {common_prefix} with External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
+          if external_loc_folder and (external_loc_folder in mount_table_path):
+            print(f"External location folder {external_loc_folder} exists in the table {mount_table} mount path {mount_table_path}")
+        elif external_loc_url[0] == common_prefix:
+          print(f"Mount point: {mount_point[0]} with source path {mount_source[0]} has a common prefix {common_prefix} with External Location with name {external_loc_name[0]} and path {external_loc_url[0]}")
+          if mount_folder and mount_folder in external_loc_url[0]:
+            print(f"Mount point folder {mount_source_folder} exists in External Location {external_loc_url[0]}")
+        else:
+          raise ValueError(f"Mount point: {mount_point[0]} with source path {mount_source[0]} doesn't part of the external location {external_loc_namel[0]} with path {external_loc_url[0]}")
 
-    except ValueError as e:
-      raise ValueError(e)
+  except ValueError as e:
+    print(f"ValueError occurred: {e}")
+    raise ValueError(e)
 
 
 def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
@@ -148,7 +161,7 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
     tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
-    target_table: The name of the target Unity Catalog table (optional). If not given all the tables from the given target schema will be checked and all of them that are external tables will be migrated to the given target catalog and target schema with the same table name as the HMS table.
+    target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
 
   """
 
@@ -380,7 +393,7 @@ def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target
         check_equality_of_hms_uc_table(spark, hms_schema, table["source_name"], uc_catalog, uc_schema, table["target_name"])
 
     else:
-      # Raise error with the status code
+      # Raise error
       raise ValueError(f"There is no eligible table in {hms_catalog}.{hms_schema} to SYNC to Unity Catalog")
       
   except (ValueError, U.AnalysisException) as e:
@@ -392,16 +405,19 @@ def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target
       raise e
 
 
-def ctas_hms_managed_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
+def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str = "", select_statement: str = "", partition_clause: str = "", options_clause: str = "") -> None:
   """
-  Migrating hive_metastore Managed Tables to UC Managed Tables with data movement using the CREATE TABLE AS SELECT (CTAS) command.
+  Migrating hive_metastore Table(s) to UC Table(s) either EXTERNAL OR MANAGED with data movement using the CREATE TABLE AS SELECT (CTAS) command.
 
   Parameters:
     spark: Active SparkSession
     tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
-    target_table: The name of the target Unity Catalog table (optional). If not given all the tables from the given target schema will be checked and all of them that are external tables will be migrated to the given target catalog and target schema with the same table name as the HMS table.
+    target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
+    select_statement: (optional) User-defined select statement. SELECT and FROM don't need to define.
+    partition_clause: (optional) An optional clause to partition the table by a subset of columns.
+    options_cluse: (optional) User-defined options including comment and tblproperties.
 
   """
 
@@ -429,11 +445,26 @@ def ctas_hms_managed_table_to_uc_managed(spark: SparkSession, tables_description
       elif not uc_schema:
         raise ValueError(f"Target UC Schema is not given")
       
+      # Set the base CTAS statement
+      ctas_stmt = f"CREATE TABLE {uc_catalog}.{uc_schema}.{uc_table}"
+
+      if partition_clause:
+        # Add PARTITIONED BY clause
+        ctas_stmt += f" PARTITIONED BY ({partition_clause})"
+      
+      if options_clause:
+        # Add OPTIONS clause
+        ctas_stmt += f" OPTIONS ({options_clause})"
+      
+      if select_statement:
+        # Add user-defined SELECT statement
+        ctas_stmt += f" AS SELECT {select_statement} FROM {hms_catalog}.{hms_schema}.{hms_table};"
+      else:
+        # SELECT all columns as is
+        ctas_stmt += f" AS SELECT * FROM {hms_catalog}.{hms_schema}.{hms_table};"
+
       # Execute CREATE TABLE AS SELECT command
-      spark.sql(f"""
-                CREATE TABLE {uc_catalog}.{uc_schema}.{uc_table} AS
-                SELECT * FROM {hms_catalog}.{hms_schema}.{hms_table};
-                """)
+      spark.sql(ctas_stmt)
       print(f"Table {hms_catalog}.{hms_schema}.{hms_table} migrated to {uc_catalog}.{uc_schema}.{uc_table} with CTAS")
       
       # Set table properties if it's delta
@@ -464,16 +495,16 @@ def ctas_hms_managed_table_to_uc_managed(spark: SparkSession, tables_description
         raise e
 
 
-def clone_hms_managed_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
+def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str = "") -> None:
   """
-  Migrating hive_metastore Managed Tables to UC Managed Tables with data movement using the DEEP CLONE command.
+  Migrating hive_metastore Table(s) to UC Table(s) either EXTERNAL OR MANAGED with data movement using the DEEP CLONE command.
 
   Parameters:
     spark: Active SparkSession
     tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
-    target_table: The name of the target Unity Catalog table (optional). If not given all the tables from the given target schema will be checked and all of them that are external tables will be migrated to the given target catalog and target schema with the same table name as the HMS table.
+    target_table:(optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
 
   """
 
