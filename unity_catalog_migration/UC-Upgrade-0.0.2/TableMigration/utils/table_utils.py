@@ -65,9 +65,9 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
       except (ValueError, U.AnalysisException) as e:
         print(f"Error on {hms_catalog}.{hms_schema}.{table_name}.")
         if isinstance(e, ValueError):
-          print(f"ValueError occurred: {e}")
+          raise ValueError(f"ValueError occurred: {e}")
         elif isinstance(e, U.AnalysisException):
-          print(f"AnalysisException occurred: {e}")
+          raise U.AnalysisException(f"AnalysisException occurred: {e}")
   return table_descriptions
 
 
@@ -204,8 +204,10 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
     except (ValueError, U.AnalysisException) as e:
       if isinstance(e, ValueError):
         print(f"ValueError occurred: {e}")
+        raise e
       elif isinstance(e, U.AnalysisException):
         print(f"AnalysisException occurred: {e}")
+        raise e
 
 def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_table: str, uc_catalog: str, uc_schema: str, uc_table: str) -> None:
   """
@@ -260,8 +262,10 @@ def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_tab
   except (ValueError, AssertionError) as e:
     if isinstance(e, ValueError):
       print(f"ValueError occurred: {e}")
+      raise e
     elif isinstance(e, AssertionError):
       print(f"AssertionError occurred: {e}")
+      raise e
 
 
 def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: str, source_table: str, target_catalog: str, target_schema: str) -> None:
@@ -323,8 +327,10 @@ def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: s
   except (ValueError, U.AnalysisException) as e:
     if isinstance(e, ValueError):
       print(f"ValueError occurred: {e}")
+      raise e
     elif isinstance(e, U.AnalysisException):
       print(f"AnalysisException occurred: {e}")
+      raise e
 
 
 def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target_catalog: str, target_schema: str) -> None:
@@ -380,8 +386,10 @@ def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target
   except (ValueError, U.AnalysisException) as e:
     if isinstance(e, ValueError):
       print(f"ValueError occurred: {e}")
+      raise e
     elif isinstance(e, U.AnalysisException):
       print(f"AnalysisException occurred: {e}")
+      raise e
 
 
 def ctas_hms_managed_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
@@ -450,8 +458,10 @@ def ctas_hms_managed_table_to_uc_managed(spark: SparkSession, tables_description
     except (ValueError, U.AnalysisException) as e:
       if isinstance(e, ValueError):
         print(f"ValueError occurred: {e}")
+        raise e
       elif isinstance(e, U.AnalysisException):
         print(f"AnalysisException occurred: {e}")
+        raise e
 
 
 def clone_hms_managed_table_to_uc_managed(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
@@ -520,5 +530,7 @@ def clone_hms_managed_table_to_uc_managed(spark: SparkSession, tables_descriptio
     except (ValueError, U.AnalysisException) as e:
       if isinstance(e, ValueError):
         print(f"ValueError occurred: {e}")
+        raise e
       elif isinstance(e, U.AnalysisException):
         print(f"AnalysisException occurred: {e}")
+        raise e
