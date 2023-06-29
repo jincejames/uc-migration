@@ -34,6 +34,40 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Widget parameters
+# MAGIC
+# MAGIC * **`Source Schema`** (mandatory): 
+# MAGIC   - The name of the source HMS schema.
+# MAGIC * **`Create Target UC Catalog`** (optional): 
+# MAGIC   - Fill with `Y` if you want to create the catalog that you give in the `Target UC Catalog`.
+# MAGIC   - Prerequisite:
+# MAGIC     - `CREATE CATALOG` privilege.
+# MAGIC * **`Target UC Catalog`** (mandatory):
+# MAGIC   - The name of the target catalog.
+# MAGIC * **`Target UC Catalog Location`** (optional):
+# MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add the a default location (managed) for the catalog.
+# MAGIC   - Prerequisite:
+# MAGIC     - `CREATE MANAGED STORAGE` privilege on the external location
+# MAGIC * **`Create Target UC Schema`** (optional):
+# MAGIC    - Fill with `Y` if you want to create the schema that you give in the `Target UC Schema`.
+# MAGIC   - Prerequisite:
+# MAGIC     - `CREATE SCHEMA` privilege on the `Target UC Catalog`.
+# MAGIC * **`Target UC Catalog Comment`** (optional):
+# MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add a description to your catalog.
+# MAGIC * **`Target UC Schema`** (mandatory):
+# MAGIC   - The name of the target schema.
+# MAGIC * **`Target UC Schema Location`** (optional):
+# MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add the a default location (managed) for the schema.
+# MAGIC   - **Note**:
+# MAGIC     - If you add location to the Create Catalog and the Create Schema at the same time, the schema's managed location will be used.
+# MAGIC   - Prerequisite:
+# MAGIC     - `CREATE MANAGED STORAGE` privilege on the external location
+# MAGIC * **`Target UC Schema Comment`** (optional):
+# MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Configuration
 
 # COMMAND ----------
@@ -45,8 +79,14 @@
 
 dbutils.widgets.removeAll()
 dbutils.widgets.text("source_schema", "", "Source Schema")
+dbutils.widgets.text("create_target_catalog", "", "Create Target UC Catalog")
+dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
+dbutils.widgets.text("target_catalog_location", "", "Target UC Catalog Location")
 dbutils.widgets.text("target_schema", "", "Target UC Schema")
+dbutils.widgets.text("create_target_schema", "", "Create Target UC Schema")
+dbutils.widgets.text("target_schema_comment", "", "Target UC Schema Comment")
+dbutils.widgets.text("target_schema_location", "", "Target UC Schema Location")
 
 # COMMAND ----------
 
@@ -56,8 +96,14 @@ dbutils.widgets.text("target_schema", "", "Target UC Schema")
 # COMMAND ----------
 
 source_schema = dbutils.widgets.get("source_schema")
+create_target_catalog = dbutils.widgets.get("create_target_catalog")
+target_catalog_comment = dbutils.widgets.get("target_catalog_comment")
 target_catalog = dbutils.widgets.get("target_catalog")
+target_catalog_location = dbutils.widgets.get("target_catalog_location")
+create_target_schema = dbutils.widgets.get("create_target_schema")
+target_schema_comment = dbutils.widgets.get("target_schema_comment")
 target_schema = dbutils.widgets.get("target_schema")
+target_schema_location = dbutils.widgets.get("target_schema_location")
 
 # COMMAND ----------
 
@@ -67,6 +113,43 @@ target_schema = dbutils.widgets.get("target_schema")
 # COMMAND ----------
 
 from utils.table_utils import sync_hms_schema_to_uc_schema
+from utils.common_utils import create_uc_catalog, create_uc_schema
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Create Catalog 
+# MAGIC **Only** if the `Create Target UC Catalog` parameter is **`Y`**
+# MAGIC - You have the `CREATE CATALOG` privilege
+# MAGIC - You can create the catalog on a default location (managed location)
+# MAGIC   - If `Target UC Catalog Location` is filled with the right path 
+# MAGIC   - You have an external location
+# MAGIC   - If you have `CREATE MANAGED STORAGE` privilege on the external location
+# MAGIC   - (Optional) Use `Target UC Catalog Comment` to add a catalog description
+
+# COMMAND ----------
+
+if create_target_catalog:
+  create_uc_catalog(spark, target_catalog, target_schema, target_catalog_location, target_catalog_comment)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Create Schema 
+# MAGIC **Only** if the `Create Schema` parameter is **`Y`**
+# MAGIC - You have the `CREATE SCHEMA` privilege on the applicable catalog
+# MAGIC - You can create the schema on a default location (managed location)
+# MAGIC   - If `Schema Location` is filled with the right path
+# MAGIC     - **Note**: If you add a location for catalog and schema either, the schema location will be used.
+# MAGIC   - You have an external location
+# MAGIC   - If you have the `CREATE MANAGED STORAGE` privilege on the applicable external location
+# MAGIC   - (Optional) Use `Target UC Schema Comment` to add a schema description
+# MAGIC
+
+# COMMAND ----------
+
+if create_target_schema:
+  create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
 
 # COMMAND ----------
 

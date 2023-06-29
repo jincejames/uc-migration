@@ -60,12 +60,15 @@ def create_uc_catalog(spark: SparkSession, catalog_name: str, schema_name: str, 
     
     # Execute the create catalog statement
     spark.sql(create_catalog_stmt)
+    print(f"Catalog {catalog_name} has been sucessfully created with the {create_catalog_stmt} statement.")
 
   except (ValueError, U.AnalysisException) as e:
         if isinstance(e, ValueError):
           print(f"ValueError occurred: {e}")
+          raise e
         elif isinstance(e, U.AnalysisException):
           print(f"AnalysisException occurred: {e}")
+          raise e
 
 def create_uc_schema(spark: SparkSession, catalog_name: str, schema_name: str, location: str = "", comment: str = "") -> None:
   """
@@ -88,8 +91,9 @@ def create_uc_schema(spark: SparkSession, catalog_name: str, schema_name: str, l
     
     # The default create schema statement
     create_schema_stmt = f"CREATE SCHEMA {catalog_name}.{schema_name}"
-    
+
     if comment: 
+    
       # Add COMMENT to the create schema statement
       create_schema_stmt += f" COMMENT '{comment}'"
     
@@ -99,12 +103,15 @@ def create_uc_schema(spark: SparkSession, catalog_name: str, schema_name: str, l
     
     # Execute the create schema statement
     spark.sql(create_schema_stmt)
+    print(f"Schema {schema_name} has been sucessfully created in the {catalog_name} catalog with the {create_schema_stmt} statement.")
 
   except (ValueError, U.AnalysisException) as e:
         if isinstance(e, ValueError):
           print(f"ValueError occurred: {e}")
+          raise e
         elif isinstance(e, U.AnalysisException):
           print(f"AnalysisException occurred: {e}")
+          raise e
 
 
 def create_external_location(spark: SparkSession, storage_credential: str, location_name: str, location_url: str, comment: str ="") -> None:
@@ -144,8 +151,10 @@ def create_external_location(spark: SparkSession, storage_credential: str, locat
   except (ValueError, U.AnalysisException) as e:
         if isinstance(e, ValueError):
           print(f"ValueError occurred: {e}")
+          raise e
         elif isinstance(e, U.AnalysisException):
           print(f"AnalysisException occurred: {e}")
+          raise e
 
 
 def create_external_location_from_mount(spark: SparkSession, dbutils: DBUtils, tables_descriptions: list, storage_credential: str, location_name_prefix: str = "", mount_point_name: str = "") -> None:
@@ -207,5 +216,7 @@ def create_external_location_from_mount(spark: SparkSession, dbutils: DBUtils, t
   except (ValueError, U.AnalysisException) as e:
         if isinstance(e, ValueError):
           print(f"ValueError occurred: {e}")
+          raise e
         elif isinstance(e, U.AnalysisException):
-          print(f"AnalysisException occurred: {e}")          
+          print(f"AnalysisException occurred: {e}")
+          raise e          
