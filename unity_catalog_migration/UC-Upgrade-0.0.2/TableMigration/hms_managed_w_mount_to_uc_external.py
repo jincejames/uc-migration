@@ -203,7 +203,7 @@ spark.conf.set("source_schema", source_schema)
 
 # COMMAND ----------
 
-mounted_tables_descriptions = get_mounted_tables_dict(managed_tables_descriptions)
+mounted_tables_descriptions = get_mounted_tables_dict(dbutils, managed_tables_descriptions)
 
 # COMMAND ----------
 
@@ -213,11 +213,6 @@ mounted_tables_descriptions = get_mounted_tables_dict(managed_tables_description
 # MAGIC If a table's mount file path doesn't exist in an external location path, an error will be thrown with the missing path.
 # MAGIC
 # MAGIC **Note**: Before run, please double check your mounts and external locations
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC DESCRIBE SCHEMA EXTENDED your_schema 
 
 # COMMAND ----------
 

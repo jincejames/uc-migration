@@ -56,9 +56,10 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
         desc_df = (spark
                   .sql(f"DESCRIBE FORMATTED {hms_catalog}.{hms_schema}.{table_name}")
                   .filter(F.col("col_name")
-                          .isin(['Location', 'Database', 'Table', 'Type', 'Provider'])
+                          .isin(['Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'])
                           )
                   )
+                  
         # Create description dict
         desc_dict = {row['col_name']:row['data_type'] for row in desc_df.collect()}
         
@@ -75,24 +76,84 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
   return table_descriptions
 
 
-def get_mounted_tables_dict(table_descriptions: list) -> list:
+def get_mounted_tables_dict(dbutils: DBUtils, table_descriptions: list) -> list:
   """
   Get the Mounted hive_metastore Tables
 
   Parameters:
-    descriptions: The list of dictionaries of the table descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    dbutils: Databricks Utilities
+    table_descriptions: The list of dictionaries of the table descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
 
   Returns:
-    The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
   """
   try:
     if not table_descriptions:
       raise ValueError("table_descriptions is empty")
+    
+    # Get mount points into a list
+    mount_points = [mount.mountPoint for mount in dbutils.fs.mounts()]
+  
   except ValueError as e:
     print(f"ValueError occurred: {e}")
     raise e
-  return [d for d in table_descriptions if "/mnt" in d["Location"]]
+  return [d for d in table_descriptions if any(mount in d["Location"] for mount in mount_points)]
+
+def get_roll_backed_or_upgraded_table_desc_dict(table_description: list, type_check: str) -> list:
+  """
+  Get Roll Backed or Upgraded table(s) descriptions based on the given check type
+
+  Parameters:
+    table_description: The list of dictionaries of the table descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    type_check: Checking upgraded or roll-backed type. Acceptable inputs: 'roll_backed' for roll backed tables, 'upgraded' for upgraded tables.
   
+  Returns:
+    The list of dictionaries of the roll-backed or upgaded tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+  """
+
+  try:
+    
+    if not table_description:
+      raise ValueError("table_description is empty")
+    elif not type_check:
+      raise ValueError("type_check is empty")
+    elif type_check not in ["roll_backed", "upgraded"]:
+      raise ValueError("type_check must be either 'roll_backed' or 'upgraded")
+
+    # Set empty output lists
+    roll_backed_tables = []
+    upgraded_tables = []
+
+    for r in table_description:
+      # Iterate through the list
+      
+      # Extract variables
+      table = r["Table"]
+      table_properties = r["Table Properties"].strip('][').split(', ')
+      
+      # Get TBLPROPERTIES Table Properties row value into dictionary
+      table_properties_dict = dict(prop.split("=") for prop in [s.split(',') for s in table_properties][0])
+      
+      # Check table properties dictionary for roll-backed or upgraded properties
+      if "roll_backed_from" in table_properties_dict:
+        # Append roll-backed tables list
+        roll_backed_tables.append(table)
+      if "upgraded_to" in table_properties_dict:
+        # Append upgraded tables list
+        upgraded_tables.append(table)
+
+  except ValueError as e:
+    print(f"ValueError occurred: {e}")
+    raise e
+
+  # Check user-defined type check for upgraded or roll_backed inputs
+  if type_check == "upgraded":
+    # Return upgraded tables list
+    return upgraded_tables
+  else:
+    # Return roll-backed tables list
+    return roll_backed_tables
+ 
 
 def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils: DBUtils, mounted_descriptions: list) -> None:
   """
@@ -100,7 +161,8 @@ def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils:
 
   Parameters:
     spark: Active SparkSession
-    mounted_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    dbutils: Databricks Utilities
+    mounted_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
   
   """
   # Get the mounts
@@ -110,12 +172,12 @@ def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils:
       raise ValueError("mounted_descriptions is empty")
   # Iterate through the list of mounted tables' descriptions
     for r in mounted_descriptions:
-        # Get the table's mounted path
+        # Extract table descriptions
         mount_table_path = r["Location"]
         mount_table = r["Table"]
 
         # Get the mount point and mount source (path) if the table location exists as mount source (path) and it is not a DatabricksRoot path
-        mount_point, mount_source = zip(*[(mount.mountPoint, mount.source) for mount in mounts if (mount.mountPoint in mount_table_path and mount.source != "DatabricksRoot")])
+        mount_point, mount_source = zip(*[(mount.mountPoint, mount.source) for mount in mounts if ((mount.mountPoint in mount_table_path or mount.source in mount_table_path) and mount.source != "DatabricksRoot")])
 
         # Read the external locations to DataFrame
         external_loc_df = (spark
@@ -128,9 +190,13 @@ def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils:
         if len(external_loc_name) > 1:
           raise ValueError(f"There are more then 1 External location: {external_loc_name}. Please check which is needed.")
 
-
+        # Determine the common prefix between the mount source url and external location url
         common_prefix = commonprefix([mount_source[0], external_loc_url[0]])
+        
+        # Extract mount source url folder part
         mount_source_folder = mount_source[0][len(common_prefix):]
+        
+        # Extract external location url folder part
         external_loc_folder = external_loc_url[0][len(common_prefix):]
         
         # Check whether the external location url is part of the mount source (path) if not raise ValueError
@@ -158,7 +224,7 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -205,11 +271,13 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
         spark.sql(f"""
                   ALTER TABLE {hms_catalog}.{hms_schema}.{hms_table} 
                   SET TBLPROPERTIES ('upgraded_to' = '{uc_catalog}.{uc_schema}.{uc_table}',
-                                    'upgraded_by' = 'current_u',
-                                    'upgraded_at' = 'current_t')
+                                    'upgraded_by' = '{current_u}',
+                                    'upgraded_at' = '{current_t}',
+                                    'upgraded_type' = 'hms_external_to_uc_external using COPY LOCATION')
                   """)
       else:
-        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set")
+        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_external_to_uc_external using COPY LOCATION.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
@@ -411,7 +479,7 @@ def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list,
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -432,6 +500,7 @@ def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list,
     hms_schema = r["Database"]
     hms_table = r["Table"]
     hms_table_provider = r["Provider"]
+    hms_table_type = r["Type"]
     
     # Set UC variables
     uc_catalog = target_catalog
@@ -477,11 +546,13 @@ def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list,
         spark.sql(f"""
                   ALTER TABLE {hms_catalog}.{hms_schema}.{hms_table} 
                   SET TBLPROPERTIES ('upgraded_to' = '{uc_catalog}.{uc_schema}.{uc_table}',
-                                    'upgraded_by' = 'current_u',
-                                    'upgraded_at' = 'current_t')
+                                    'upgraded_by' = '{current_u}',
+                                    'upgraded_at' = '{current_t}',
+                                    'upgraded_type' = 'hms_{hms_table_type}_to_uc_managed using CTAS')
                   """)
       else:
-        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set")
+        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_{hms_table_type}_to_uc_managed using CTAS.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
@@ -501,7 +572,7 @@ def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table:(optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -519,6 +590,7 @@ def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list
     hms_schema = r["Database"]
     hms_table = r["Table"]
     hms_table_provider = r["Provider"]
+    hms_table_type = r["Type"]
     
     # Set UC variables
     uc_catalog = target_catalog
@@ -549,11 +621,13 @@ def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list
         spark.sql(f"""
                   ALTER TABLE {hms_catalog}.{hms_schema}.{hms_table} 
                   SET TBLPROPERTIES ('upgraded_to' = '{uc_catalog}.{uc_schema}.{uc_table}',
-                                    'upgraded_by' = 'current_u',
-                                    'upgraded_at' = 'current_t')
+                                    'upgraded_by' = '{current_u}',
+                                    'upgraded_at' = '{current_t}',
+                                    'upgraded_type' = 'hms_{hms_table_type}_to_uc_managed using CLONE')
                   """)
       else:
-        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set")
+        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_{hms_table_type}_to_uc_managed using CLONE.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)

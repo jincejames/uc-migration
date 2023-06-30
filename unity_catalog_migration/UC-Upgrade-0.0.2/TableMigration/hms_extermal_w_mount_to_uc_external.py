@@ -139,7 +139,7 @@ external_tables_descriptions = get_hms_table_description(spark, source_schema, s
 
 # COMMAND ----------
 
-mounted_tables_descriptions = get_mounted_tables_dict(external_tables_descriptions)
+mounted_tables_descriptions = get_mounted_tables_dict(dbutils, external_tables_descriptions)
 
 # COMMAND ----------
 
@@ -149,6 +149,10 @@ mounted_tables_descriptions = get_mounted_tables_dict(external_tables_descriptio
 # MAGIC If a table's mount file path doesn't exist in an external location path, an error will be thrown with the missing path.
 # MAGIC
 # MAGIC **Note**: Before run, please double check your mounts and external locations
+
+# COMMAND ----------
+
+mounted_tables_descriptions
 
 # COMMAND ----------
 
