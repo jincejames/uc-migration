@@ -14,8 +14,8 @@
 # MAGIC
 # MAGIC * **`Source Schema`** (mandatory): 
 # MAGIC   - The name of the source HMS schema.
-# MAGIC * **`Source Table`** (optional): 
-# MAGIC   - The name of the source HMS table. If filled only the given external table will be pulled otherwise all external tables.   
+# MAGIC * **`Source Table(s)`** (optional): 
+# MAGIC   - The name(s) of the source HMS table(s). Multiple tables should be given as follows "table_1, table_2". If filled only the given external table(s) will be pulled otherwise all external tables.  
 
 # COMMAND ----------
 
@@ -31,7 +31,7 @@
 
 dbutils.widgets.removeAll()
 dbutils.widgets.text("source_schema", "", "Source Schema")
-dbutils.widgets.text("source_table", "", "Source Table")
+dbutils.widgets.text("source_table", "", "Source Table(s)")
 
 # COMMAND ----------
 
@@ -44,7 +44,10 @@ source_schema = dbutils.widgets.get("source_schema")
 source_table = dbutils.widgets.get("source_table")
 # Table type mustn't be changed
 table_type = "EXTERNAL"
+# Table properties type check mustn't be changed
 table_properties_type_check = "upgraded"
+# Source catalog mustn't be changed
+source_catalog = "hive_metastore"
 
 # COMMAND ----------
 
@@ -53,7 +56,7 @@ table_properties_type_check = "upgraded"
 
 # COMMAND ----------
 
-from utils.table_utils import get_hms_table_description, get_roll_backed_or_upgraded_table_desc_dict
+from utils.table_utils import get_table_description, get_roll_backed_or_upgraded_table_desc_dict
 
 # COMMAND ----------
 
@@ -61,16 +64,12 @@ from utils.table_utils import get_hms_table_description, get_roll_backed_or_upgr
 # MAGIC ## Get the hive metastore table(s)' descriptions
 # MAGIC
 # MAGIC Available options:
-# MAGIC - Get all managed tables descriptions if the `Source Table`  parameter is empty
-# MAGIC - Get a managed table description if the `Source Table` is filled
+# MAGIC - Get all managed tables descriptions if the `Source Table(s)`  parameter is empty
+# MAGIC - Get the given managed table(s) description if the `Source Table(s)` is filled
 
 # COMMAND ----------
 
-external_table_descriptions = get_hms_table_description(spark, source_schema, source_table, table_type)
-
-# COMMAND ----------
-
-external_table_descriptions
+external_table_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, table_type)
 
 # COMMAND ----------
 
@@ -102,10 +101,6 @@ upgraded_tables_str = ", ".join([r["Table"] for r in external_table_descriptions
 spark.conf.set("upgraded_tables_str", upgraded_tables_str)
 # Pass HMS schema to spark context
 spark.conf.set("source_schema", source_schema)
-
-# COMMAND ----------
-
-upgraded_tables_str
 
 # COMMAND ----------
 

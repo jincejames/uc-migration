@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Hive Metastore Tables to UC Managed Tables using CTAS (CREATE TABLE AS SELECT)
 # MAGIC
-# MAGIC This notebook will migrate all managed or external tables (or a single) from a Hive metastore to a UC catalog.
+# MAGIC This notebook will migrate managed or external table(s) from a Hive Metastore to a UC catalog.
 # MAGIC
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with spark.databricks.sql.initial.catalog.name set to hive_metastore or the base catalog where the tables will be pulled
@@ -35,8 +35,8 @@
 # MAGIC   - Type of the source tables either MANAGED or EXTERNAL.
 # MAGIC * **`Source Schema`** (mandatory): 
 # MAGIC   - The name of the source HMS schema.
-# MAGIC * **`Source Table`** (optional): 
-# MAGIC   - The name of the source HMS table. If filled only the given table will be pulled otherwise all the tables based on the `Source Table(s) Type`.
+# MAGIC * **`Source Table(s)`** (optional): 
+# MAGIC   - The name(s) of the source HMS table(s). Multiple tables should be given as follows "table_1, table_2". If filled only the given table(s) will be pulled otherwise all the tables based on the `Source Table(s) Type`.
 # MAGIC * **`Create Target UC Catalog`** (optional): 
 # MAGIC   - Fill with `Y` if you want to create the catalog that you give in the `Target UC Catalog`.
 # MAGIC   - Prerequisite:
@@ -64,7 +64,7 @@
 # MAGIC * **`Target UC Schema Comment`** (optional):
 # MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.
 # MAGIC * **`Target UC Table`** (optional):
-# MAGIC   - Only applicable if the `Source Table` is filled, then a name can be given for the Target UC Table. Otherwise, the `Source Table` name will be used.
+# MAGIC   - Only applicable if the `Source Table(s)` is filled with a **single table name**, then a name can be given for the Target UC Table. Otherwise, the `Source Table(s)` name will be used.
 # MAGIC * **`SELECT Statement`** (optional):
 # MAGIC   - User-defined column list with or without transformations (SELECT and FROM syntax not needed)
 # MAGIC * **`PARTITION BY Clause`** (optional):
@@ -82,7 +82,7 @@
 dbutils.widgets.removeAll()
 dbutils.widgets.text("source_table_type", "Choose MANAGED OR EXTERNAL", "Source Table(s) Type")
 dbutils.widgets.text("source_schema", "", "Source Schema")
-dbutils.widgets.text("source_table", "", "Source Table")
+dbutils.widgets.text("source_table", "", "Source Table(s)")
 dbutils.widgets.text("create_target_catalog", "", "Create Target UC Catalog")
 dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
@@ -118,6 +118,8 @@ target_table = dbutils.widgets.get("target_table")
 select_statement = dbutils.widgets.get("select_statement")
 partition_clause = dbutils.widgets.get("partition_clause")
 options_clause = dbutils.widgets.get("options_clause")
+# Source catalog mustn't be changed
+source_catalog = "hive_metastore"
 
 # COMMAND ----------
 
@@ -126,7 +128,7 @@ options_clause = dbutils.widgets.get("options_clause")
 
 # COMMAND ----------
 
-from utils.table_utils import get_hms_table_description, ctas_hms_table_to_uc_managed
+from utils.table_utils import get_table_description, ctas_hms_table_to_uc_managed
 from utils.common_utils import create_uc_catalog, create_uc_schema
 
 # COMMAND ----------
@@ -135,12 +137,12 @@ from utils.common_utils import create_uc_catalog, create_uc_schema
 # MAGIC ## Get the hive metastore table(s)' descriptions
 # MAGIC
 # MAGIC Available options:
-# MAGIC - Get all managed tables descriptions if the `Source Table`  parameter is empty
-# MAGIC - Get a managed table description if the `Source Table` is filled
+# MAGIC - Get all managed tables descriptions if the `Source Table(s)`  parameter is empty
+# MAGIC - Get the given managed table(s) description if the `Source Table(s)` is filled
 
 # COMMAND ----------
 
-tables_descriptions = get_hms_table_description(spark, source_schema, source_table, source_table_type)
+tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, source_table_type)
 
 # COMMAND ----------
 
@@ -185,10 +187,10 @@ if create_target_schema:
 # MAGIC
 # MAGIC Available options:
 # MAGIC - Migrate **all** managed tables from the given `Source Schema` to the given `Target Catalog` and `Target Schema`. 
-# MAGIC   - Applicable if the `Source Table` is empty.
-# MAGIC - Migrate **single** managed table from the given hive metastore `Source Schema` and `Source Table` to the given `Target Catalog` and `Target Schema`.
-# MAGIC   - Applicable if the `Source Table` is filled.
-# MAGIC   - If `Target Table` is empty, the `Source Table`'s name is given to the Unity Catalog table.
+# MAGIC   - Applicable if the `Source Table(s)` is empty.
+# MAGIC - Migrate **single or multiple** managed table(s) from the given Hive Metastore `Source Schema` and `Source Table(s)` to the given `Target Catalog` and `Target Schema`.
+# MAGIC   - Applicable if the `Source Table(s)` is filled.
+# MAGIC   - If `Target Table` is empty, the `Source Table(s)`'s name is given to the Unity Catalog table. Only applicable if a single source table name is given.
 # MAGIC   - Available CTAS parameters:
 # MAGIC     - `SELECT Statement` SELECT and FROM syntax not needed
 # MAGIC     - `PARTITION BY clause` column names separated by comma (PARTITION BY syntax not needed)

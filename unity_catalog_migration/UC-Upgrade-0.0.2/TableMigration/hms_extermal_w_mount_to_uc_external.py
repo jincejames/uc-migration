@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Hive Metastore External Tables outside of DBFS with mounted file paths to UC External Tables
 # MAGIC
-# MAGIC This notebook will migrate all external tables (or a single) outside of DBFS with mounted file paths in a given schema from the Hive metastore to a UC catalog.
+# MAGIC This notebook will migrate external table(s) outside of DBFS with mounted file path(s) in a given schema from the Hive Metastore to a UC catalog.
 # MAGIC
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with **spark.databricks.sql.initial.catalog.name set to hive_metastore** or the base catalog where the external tables will be pulled
@@ -32,8 +32,8 @@
 # MAGIC
 # MAGIC * **`Source Schema`** (mandatory): 
 # MAGIC   - The name of the source HMS schema.
-# MAGIC * **`Source Table`** (optional): 
-# MAGIC   - The name of the source HMS table. If filled only the given external table will be pulled otherwise all external tables.
+# MAGIC * **`Source Table(s)`** (optional): 
+# MAGIC   - The name of the source HMS table. Multiple tables should be given as follows "table_1, table_2". If filled only the given external table(s) will be pulled otherwise all external tables.
 # MAGIC * **`Create Target UC Catalog`** (optional): 
 # MAGIC   - Fill with `Y` if you want to create the catalog that you give in the `Target UC Catalog`.
 # MAGIC   - Prerequisite:
@@ -61,7 +61,7 @@
 # MAGIC * **`Target UC Schema Comment`** (optional):
 # MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.
 # MAGIC * **`Target UC Table`** (optional):
-# MAGIC   - Only applicable if the `Source Table` is filled, then a name can be given for the Target UC Table. Otherwise, the `Source Table` name will be used.   
+# MAGIC   - Only applicable if the `Source Table(s)` is filled with a **single table name**, then a name can be given for the Target UC Table. Otherwise, the `Source Table(s)` name will be used.   
 
 # COMMAND ----------
 
@@ -77,7 +77,7 @@
 
 dbutils.widgets.removeAll()
 dbutils.widgets.text("source_schema", "", "Source Schema")
-dbutils.widgets.text("source_table", "", "Source Table")
+dbutils.widgets.text("source_table", "", "Source Table(s)")
 dbutils.widgets.text("create_target_catalog", "", "Create Target UC Catalog")
 dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
@@ -108,6 +108,8 @@ target_schema_location = dbutils.widgets.get("target_schema_location")
 target_table = dbutils.widgets.get("target_table")
 # Table type mustn't be changed
 table_type = "EXTERNAL"
+# Source catalog mustn't be changed
+source_catalog = "hive_metastore"
 
 # COMMAND ----------
 
@@ -116,7 +118,7 @@ table_type = "EXTERNAL"
 
 # COMMAND ----------
 
-from utils.table_utils import (get_hms_table_description, get_mounted_tables_dict,check_mountpoint_existance_as_externallocation, migrate_hms_external_table_to_uc_external)
+from utils.table_utils import (get_table_description, get_mounted_tables_dict,check_mountpoint_existance_as_externallocation, migrate_hms_external_table_to_uc_external)
 from utils.common_utils import create_uc_catalog, create_uc_schema
 
 # COMMAND ----------
@@ -125,12 +127,12 @@ from utils.common_utils import create_uc_catalog, create_uc_schema
 # MAGIC ## Get the hive metastore table(s)' descriptions
 # MAGIC
 # MAGIC Available options:
-# MAGIC - Get all managed tables descriptions if the `Source Table`  parameter is empty
-# MAGIC - Get a managed table description if the `Source Table` is filled
+# MAGIC - Get all managed tables descriptions if the `Source Table(s)`  parameter is empty
+# MAGIC - Get the given managed table(s) description if the `Source Table(s)` is filled
 
 # COMMAND ----------
 
-external_tables_descriptions = get_hms_table_description(spark, source_schema, source_table, table_type)
+external_tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, table_type)
 
 # COMMAND ----------
 
@@ -149,10 +151,6 @@ mounted_tables_descriptions = get_mounted_tables_dict(dbutils, external_tables_d
 # MAGIC If a table's mount file path doesn't exist in an external location path, an error will be thrown with the missing path.
 # MAGIC
 # MAGIC **Note**: Before run, please double check your mounts and external locations
-
-# COMMAND ----------
-
-mounted_tables_descriptions
 
 # COMMAND ----------
 
@@ -201,10 +199,10 @@ if create_target_schema:
 # MAGIC
 # MAGIC Available options:
 # MAGIC - Migrate all external tables with mounted file paths from the given `Source Schema` to the given `Target Catalog` and `Target Schema`. 
-# MAGIC   - Applicable if the `Source Table` is empty.
-# MAGIC - Migrate an external table with mounted file path from the given hive metastore `Source Schema` and `Source Table` to the given `Target Catalog` and `Target Schema`.
-# MAGIC   - Applicable if the `Source Table` is filled.
-# MAGIC   - If `Target Table` is empty, the `Source Table`'s name is given to the Unity Catalog table.
+# MAGIC   - Applicable if the `Source Table(s)` is empty.
+# MAGIC - Migrate external table(s) with mounted file path(s) from the given Hive Metastore `Source Schema` and `Source Table(s)` to the given `Target Catalog` and `Target Schema`.
+# MAGIC   - Applicable if the `Source Table(s)` is filled.
+# MAGIC   - If `Target Table` is empty, the `Source Table(s)`'s name is given to the Unity Catalog table. Only applicable, if a single source table name is given.
 # MAGIC
 # MAGIC **Note**: Equality check between the legacy HMS table(s) and the UC table(s) will run
 

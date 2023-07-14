@@ -6,18 +6,19 @@ from pyspark.dbutils import DBUtils
 import pyspark.sql.functions as F
 import pyspark.sql.utils as U
 
-def get_hms_table_description(spark: SparkSession, source_schema: str, source_table: str, table_type: str) -> list:
+def get_table_description(spark: SparkSession, source_catalog: str, source_schema: str, source_table: str, table_type: str) -> list:
   """
   Get the Descriptions of HMS tables to a list
   
   Parameters:
     spark: Active SparkSession
-    source_schema: The string of the hive_metastore source schema
-    source_table: The string of the hive_metastore source table. All the tables in the given source schema will be used if not given.
-    table_type: The type of the hive_metastore source table (e.g. EXTERNAL, MANAGED)
+    source_catalog: The name of the source catalog.
+    source_schema: The name of the source schema
+    source_table: The name(s) of the source table(s) in the given schema. Should be given as a string like "table_1, table_2". All the tables in the given source schema will be used if not given.
+    table_type: The type of the source table (e.g. EXTERNAL, MANAGED)
   
   Returns:
-    The list of dictionaries of the tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
+    The list of dictionaries of the tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
   """
 
   try:
@@ -29,34 +30,33 @@ def get_hms_table_description(spark: SparkSession, source_schema: str, source_ta
     if not source_schema:
       raise ValueError("Source Schema is empty")
 
-    # Set hive_metastore variables
-    hms_catalog = "hive_metastore"
-    hms_schema = source_schema
-    hms_table = source_table
-
     # List variable for table descriptions
     table_descriptions = []
 
-    if not hms_table:
+    if not source_table:
       # Read all tables in the given schema to DataFrame
-      hms_tables = (spark
-                    .sql(f"show tables in {hms_catalog}.{hms_schema}")
+      source_tables = (spark
+                    .sql(f"show tables in {source_catalog}.{source_schema}")
                     .select("tableName")
                     )
       # Get all tables from Hive Metastore for the given hive_metastore schema
-      tables = list(map(lambda r: r.tableName, hms_tables.collect()))
+      tables = list(map(lambda r: r.tableName, source_tables.collect()))
+      print(tables)
+    elif source_table.find(","):
+      # The input is a list of tables in a string
+      tables = source_table.split(", ")
     else:
-      # Set the given HMS table
-      tables = [f"{hms_table}"]
+      # The input is a single table
+      tables = [f"{source_table}"]
 
     # Loop through each table and run the describe command
     for table in tables:
         table_name = table
         # Read the Table description into DataFrame
         desc_df = (spark
-                  .sql(f"DESCRIBE FORMATTED {hms_catalog}.{hms_schema}.{table_name}")
+                  .sql(f"DESCRIBE FORMATTED {source_catalog}.{source_schema}.{table_name}")
                   .filter(F.col("col_name")
-                          .isin(['Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'])
+                          .isin(['Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'])
                           )
                   )
                   
@@ -82,10 +82,10 @@ def get_mounted_tables_dict(dbutils: DBUtils, table_descriptions: list) -> list:
 
   Parameters:
     dbutils: Databricks Utilities
-    table_descriptions: The list of dictionaries of the table descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    table_descriptions: The list of dictionaries of the table descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
 
   Returns:
-    The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
   """
   try:
     if not table_descriptions:
@@ -104,11 +104,11 @@ def get_roll_backed_or_upgraded_table_desc_dict(table_description: list, type_ch
   Get Roll Backed or Upgraded table(s) descriptions based on the given check type
 
   Parameters:
-    table_description: The list of dictionaries of the table descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    table_description: The list of dictionaries of the table descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
     type_check: Checking upgraded or roll-backed type. Acceptable inputs: 'roll_backed' for roll backed tables, 'upgraded' for upgraded tables.
   
   Returns:
-    The list of dictionaries of the roll-backed or upgaded tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    The list of dictionaries of the roll-backed or upgaded tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
   """
 
   try:
@@ -162,7 +162,7 @@ def check_mountpoint_existance_as_externallocation(spark: SparkSession, dbutils:
   Parameters:
     spark: Active SparkSession
     dbutils: Databricks Utilities
-    mounted_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    mounted_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
   
   """
   # Get the mounts
@@ -224,7 +224,7 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -277,7 +277,7 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
                   """)
       else:
         print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
-        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_external_to_uc_external using COPY LOCATION.'")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'Upgraded to {uc_catalog}.{uc_schema}.{uc_table} by {current_u} at {current_t} via hms_external_to_uc_external using COPY LOCATION.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
@@ -289,6 +289,80 @@ def migrate_hms_external_table_to_uc_external(spark: SparkSession, tables_descri
       elif isinstance(e, U.AnalysisException):
         print(f"AnalysisException occurred: {e}")
         raise e
+
+
+def migrate_hms_table_to_uc_external(spark: SparkSession, tables_descriptions: list, target_catalog: str, target_schema: str, target_table: str) -> None:
+  """
+  Migrating hive_metastore External Tables to UC External Tables without data movement using the CREATE TABLE USING LOCATION command.
+
+  Parameters:
+    spark: Active SparkSession
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. IIncluding 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
+    target_catalog: The name of the target Unity Catalog catalog
+    target_schema: The name of the target Unity Catalog schema
+    target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
+
+  """
+
+  if not tables_descriptions:
+    raise ValueError("tables_descriptions input list is empty")
+  
+  # Iterate through the tables' descriptions list of dictionaries
+  for r in tables_descriptions:
+    
+    # Set hive_metastore variables
+    hms_catalog = "hive_metastore"
+    hms_schema = r["Database"]
+    hms_table = r["Table"]
+    hms_table_provider = r["Provider"]
+    
+    # Set UC variables
+    uc_catalog = target_catalog
+    uc_schema = target_schema
+    # I target UC table is not given, use the hive_metastore table
+    uc_table = target_table if target_table else hms_table
+    
+    try:
+      if not uc_catalog:
+        raise ValueError(f"Target UC Catalog is not given")
+      elif not uc_schema:
+        raise ValueError(f"Target UC Schema is not given")
+      
+      # Execute Create HMS Table Like UC Table with COPY LOCATION
+      spark.sql(f"""
+                CREATE TABLE {uc_catalog}.{uc_schema}.{uc_table} LIKE {hms_catalog}.{hms_schema}.{hms_table} COPY LOCATION;
+                """)
+      print(f"Table {hms_catalog}.{hms_schema}.{hms_table} migrated to {uc_catalog}.{uc_schema}.{uc_table} using the CREATE TABLE LIKE COPY LOCATION")
+      
+      # Set table properties if it's delta
+      if hms_table_provider.lower() == "delta":
+        # Set current user and current timestamp
+        current_u = spark.sql("SELECT current_user()").collect()[0][0]
+        current_t = spark.sql("SELECT current_timestamp()").collect()[0][0]
+        
+        # Execute set table properties
+        spark.sql(f"""
+                  ALTER TABLE {hms_catalog}.{hms_schema}.{hms_table} 
+                  SET TBLPROPERTIES ('upgraded_to' = '{uc_catalog}.{uc_schema}.{uc_table}',
+                                    'upgraded_by' = '{current_u}',
+                                    'upgraded_at' = '{current_t}',
+                                    'upgraded_type' = 'hms_external_to_uc_external using COPY LOCATION')
+                  """)
+      else:
+        print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'Upgraded to {uc_catalog}.{uc_schema}.{uc_table} by {current_u} at {current_t} via  hms_external_to_uc_external using COPY LOCATION.'")
+
+      # Check the match of hive_metastore and UC tables
+      check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
+        
+    except (ValueError, U.AnalysisException) as e:
+      if isinstance(e, ValueError):
+        print(f"ValueError occurred: {e}")
+        raise e
+      elif isinstance(e, U.AnalysisException):
+        print(f"AnalysisException occurred: {e}")
+        raise e
+
 
 def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_table: str, uc_catalog: str, uc_schema: str, uc_table: str) -> None:
   """
@@ -351,13 +425,13 @@ def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_tab
 
 def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: str, source_table: str, target_catalog: str, target_schema: str) -> None:
   """
-  Using the SYNC TABLE command to upgrade individual hive_metastore external table to external table in Unity Catalog.
-  You can use it to create a new table in Unity Catalog from the existing hive_metastore table as well as update the Unity Catalog table when the source tables in hive_metastore are changed.
+  Using the SYNC TABLE command to upgrade individual or list of hive_metastore external or managed table(s) to external table(s) in Unity Catalog.
+  You can use it to create the new table(s) in Unity Catalog from the existing hive_metastore table(s) as well as update the Unity Catalog table(s) when the source tables in hive_metastore are changed.
   
   Parameters:
     spark: Active SparkSession
     source_schema: The name of the source hive_metastore schema
-    source_table: The name of the source hive_metastore table in the schema
+    source_table: The name(s) of the source hive_metastore table(s) in the schema. Should be given as a string like "table_1, table_2".
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
 
@@ -373,38 +447,49 @@ def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: s
     elif not target_schema:
       raise ValueError("target_schema input string is empty")
       
-    # Set hive_metastore variables
-    hms_catalog = "hive_metastore"
-    hms_schema = source_schema
-    hms_table = source_table
-    
-    # Set UC variables
-    uc_catalog = target_catalog
-    uc_schema = target_schema
-    uc_table = hms_table
-      
-    # Execute SYNC TABLE DRY RUN to check that the table is eligible for SYNC 
-    sync_dry = spark.sql(f"""
-                          SYNC TABLE {uc_catalog}.{uc_schema}.{uc_table} FROM {hms_catalog}.{hms_schema}.{hms_table} DRY RUN;
-                          """)
-    # Extract sync status and description
-    sync_status = sync_dry.select("status_code").collect()[0][0]
-    sync_description = sync_dry.select("description").collect()[0][0]
-    
-    if sync_status.upper() == "DRY_RUN_SUCCESS":
-      # Execute the SYNC if DRY RUN was successful
-      spark.sql(f"""
-                SYNC TABLE {uc_catalog}.{uc_schema}.{uc_table} FROM {hms_catalog}.{hms_schema}.{hms_table};
-                """)
-      print(f"Table {hms_catalog}.{hms_schema}.{hms_table} is successfully synced to {uc_catalog}.{uc_schema}.{uc_table}")
-
-      # Check the match of HMS and UC tables
-      check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
-
+    # Create table list from a string list
+    if source_table.find(","):
+      # The input is a list of tables in a string
+      table_list = source_table.split(", ")
     else:
-      # Raise error with the status code
-      raise ValueError(f"Table {hms_catalog}.{hms_schema}.{hms_table} cannot be synced. Description: {sync_description}")
+      # The input is a single table
+      table_list = source_table
+
+    # Iterate through the table list
+    for table in table_list:
+
+      # Set hive_metastore variables
+      hms_catalog = "hive_metastore"
+      hms_schema = source_schema
+      hms_table = table
       
+      # Set UC variables
+      uc_catalog = target_catalog
+      uc_schema = target_schema
+      uc_table = hms_table
+        
+      # Execute SYNC TABLE DRY RUN to check that the table is eligible for SYNC 
+      sync_dry = spark.sql(f"""
+                            SYNC TABLE {uc_catalog}.{uc_schema}.{uc_table} FROM {hms_catalog}.{hms_schema}.{hms_table} DRY RUN;
+                            """)
+      # Extract sync status and description
+      sync_status = sync_dry.select("status_code").collect()[0][0]
+      sync_description = sync_dry.select("description").collect()[0][0]
+      
+      if sync_status.upper() == "DRY_RUN_SUCCESS":
+        # Execute the SYNC if DRY RUN was successful
+        spark.sql(f"""
+                  SYNC TABLE {uc_catalog}.{uc_schema}.{uc_table} FROM {hms_catalog}.{hms_schema}.{hms_table};
+                  """)
+        print(f"Table {hms_catalog}.{hms_schema}.{hms_table} is successfully synced to {uc_catalog}.{uc_schema}.{uc_table}")
+
+        # Check the match of HMS and UC tables
+        check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
+
+      else:
+        # Raise error with the status code
+        raise ValueError(f"Table {hms_catalog}.{hms_schema}.{hms_table} cannot be synced. Description: {sync_description}")
+        
   except (ValueError, U.AnalysisException) as e:
     if isinstance(e, ValueError):
       print(f"ValueError occurred: {e}")
@@ -479,7 +564,7 @@ def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list,
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table: (optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -552,7 +637,7 @@ def ctas_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list,
                   """)
       else:
         print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
-        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_{hms_table_type}_to_uc_managed using CTAS.'")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'Upgraded to {uc_catalog}.{uc_schema}.{uc_table} by {current_u} at {current_t} via hms_{hms_table_type}_to_uc_managed using CTAS.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
@@ -572,7 +657,7 @@ def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list
 
   Parameters:
     spark: Active SparkSession
-    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties.
+    tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
     target_catalog: The name of the target Unity Catalog catalog
     target_schema: The name of the target Unity Catalog schema
     target_table:(optional) The name of the target Unity Catalog table. If not given UC table gets the name of the original HMS table.
@@ -627,7 +712,78 @@ def clone_hms_table_to_uc_managed(spark: SparkSession, tables_descriptions: list
                   """)
       else:
         print(f"Table provider is {hms_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
-        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'hms_{hms_table_type}_to_uc_managed using CLONE.'")
+        spark.sql(f"COMMENT ON TABLE {hms_catalog}.{hms_schema}.{hms_table} IS 'Upgraded to {uc_catalog}.{uc_schema}.{uc_table} by {current_u} at {current_t} via hms_{hms_table_type}_to_uc_managed using CLONE.'")
+
+      # Check the match of hive_metastore and UC tables
+      check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
+        
+    except (ValueError, U.AnalysisException) as e:
+      if isinstance(e, ValueError):
+        print(f"ValueError occurred: {e}")
+        raise e
+      elif isinstance(e, U.AnalysisException):
+        print(f"AnalysisException occurred: {e}")
+        raise e
+
+
+def create_hms_external_from_uc_table(spark: SparkSession, tables_descriptions: list, target_schema: str, target_table: str) -> None:
+  """
+  Create hive_metastore External Table(s) from UC Table(s) without data movement using the CREATE TABLE LOCATION command.
+
+  Parameters:
+    spark: Active SparkSession
+    tables_descriptions: The list of dictionaries of the UC tables' descriptions. Including 'Location', 'Catalog', 'Database', 'Table', 'Type', 'Provider', 'Comment', 'Table Properties'.
+    target_schema: The name of the target Hive Metastore schema
+    target_table: (optional) The name of the target Hive Metastore table. If not given HMS table gets the name of the original UC table. Only applicable if there is a single source UC table given. 
+
+  """
+
+  if not tables_descriptions:
+    raise ValueError("tables_descriptions input list is empty")
+  
+  # Iterate through the tables' descriptions list of dictionaries
+  for r in tables_descriptions:
+     
+    # Set UC variables
+    uc_catalog = r["Catalog"]
+    uc_schema = r["Database"]
+    uc_table = r["Table"]
+    uc_table_provider = r["Provider"]
+    uc_table_location = r["Location"]
+
+    # Set hive_metastore variables
+    hms_catalog = "hive_metastore"
+    hms_schema = target_schema
+    # I target HMS table is not given, use the UC table
+    hms_table = target_table if target_table else uc_table
+    
+    try:
+      if not hms_schema:
+        raise ValueError(f"Target UC Schema is not given")
+      
+      # Execute Create HMS Table Like UC Table with COPY LOCATION
+      spark.sql(f"""
+                CREATE TABLE {hms_catalog}.{hms_schema}.{hms_table} LOCATION '{uc_table_location}';
+                """)
+      print(f"External Table {hms_catalog}.{hms_schema}.{hms_table} has been created from {uc_catalog}.{uc_schema}.{uc_table} using the CREATE TABLE LOCATION")
+      
+      # Set table properties if it's delta
+      if uc_table_provider.lower() == "delta":
+        # Set current user and current timestamp
+        current_u = spark.sql("SELECT current_user()").collect()[0][0]
+        current_t = spark.sql("SELECT current_timestamp()").collect()[0][0]
+        
+        # Execute set table properties
+        spark.sql(f"""
+                  ALTER TABLE {uc_catalog}.{uc_schema}.{uc_table} 
+                  SET TBLPROPERTIES ('created_to' = '{hms_catalog}.{uc_schema}.{uc_table}',
+                                    'created_by' = '{current_u}',
+                                    'created_at' = '{current_t}',
+                                    'created_type' = 'hms_external_from_uc_table using CREATE TABLE LOCATION')
+                  """)
+      else:
+        print(f"Table provider is {uc_table_provider}, hence TBLPROPERTIES cannot be set. Setting table comment instead.")
+        spark.sql(f"COMMENT ON TABLE {uc_catalog}.{uc_schema}.{uc_table} IS 'Created {hms_catalog}.{uc_schema}.{uc_table} via hms_external_from_uc_table using CREATE TABLE LOCATION.'")
 
       # Check the match of hive_metastore and UC tables
       check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)

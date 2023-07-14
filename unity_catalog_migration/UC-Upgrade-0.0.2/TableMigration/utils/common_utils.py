@@ -219,4 +219,45 @@ def create_external_location_from_mount(spark: SparkSession, dbutils: DBUtils, t
           raise e
         elif isinstance(e, U.AnalysisException):
           print(f"AnalysisException occurred: {e}")
-          raise e          
+          raise e
+
+
+def create_hms_schema(spark: SparkSession, schema_name: str, location: str = "", comment: str = "") -> None:
+  """
+  Creates Hive Metastore Schema in the given catalog with the given schema name, location if applicable, and description as a comment
+
+  Parameters:
+    spark: Active SparkSession
+    schema_name: The name of the Hive Metastore schema
+    location: (Optional) Specify a location here only if you do not want managed tables in this schema to be stored in the DBFS root storage location
+    comment: (Optional) The description of the schema
+
+  """
+
+  try:
+    if not schema_name:
+      raise ValueError("schema_name is empty")
+    
+    # The default create schema statement
+    create_schema_stmt = f"CREATE SCHEMA hive_metastore.{schema_name}"
+
+    if comment: 
+    
+      # Add COMMENT to the create schema statement
+      create_schema_stmt += f" COMMENT '{comment}'"
+    
+    if location:
+      # Add LOCATION to the create schema statement
+      create_schema_stmt += f" LOCATION {location}"
+    
+    # Execute the create schema statement
+    spark.sql(create_schema_stmt)
+    print(f"Schema {schema_name} has been sucessfully created in the hive_metastore with the {create_schema_stmt} statement.")
+
+  except (ValueError, U.AnalysisException) as e:
+        if isinstance(e, ValueError):
+          print(f"ValueError occurred: {e}")
+          raise e
+        elif isinstance(e, U.AnalysisException):
+          print(f"AnalysisException occurred: {e}")
+          raise e
