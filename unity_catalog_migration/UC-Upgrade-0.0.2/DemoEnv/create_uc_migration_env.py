@@ -382,15 +382,15 @@ spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog}")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.migrate_managed_dbfs_tables_schema")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_dbfs_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.migrate_external_tables_schema")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.external_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.migrate_managed_tables_outside_of_dbfs_schema")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs")
 
 # COMMAND ----------
 
