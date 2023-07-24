@@ -1,8 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Seamlessly Upgrade Hive Metastore External Tables outside of DBFS with mounted file paths in a given schema to UC External Table using SYNC SCHEMA
+# MAGIC # Seamlessly Upgrade Hive Metastore External Tables outside of DBFS with mounted file paths in the given schema(s) to UC External Table using SYNC SCHEMA
 # MAGIC
-# MAGIC This notebook will seamlessly migrate eligible external tables outside of DBFS with a mounted file path in a given schema from the Hive metastore to a UC catalog.
+# MAGIC This notebook will seamlessly migrate eligible external tables outside of DBFS with a mounted file path in the given schema(s) from the Hive metastore to a UC catalog.
 # MAGIC
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with **spark.databricks.sql.initial.catalog.name set to hive_metastore** or the base catalog where the external tables will be pulled
@@ -36,8 +36,9 @@
 # MAGIC %md
 # MAGIC ## Widget parameters
 # MAGIC
-# MAGIC * **`Source Schema`** (mandatory): 
-# MAGIC   - The name of the source HMS schema.
+# MAGIC * **`Source Schema(s)`** (mandatory): 
+# MAGIC   - The name(s) of the source HMS schema(s). Should be given like "schema_1, schema_2".
+# MAGIC     - **IMPORTANT**: If multiple schemas are given, Unity Catalog schemas with the same name should be already created.
 # MAGIC * **`Create Target UC Catalog`** (optional): 
 # MAGIC   - Fill with `Y` if you want to create the catalog that you give in the `Target UC Catalog`.
 # MAGIC   - Prerequisite:
@@ -56,19 +57,32 @@
 # MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add a description to your catalog.
 # MAGIC * **`Target UC Schema`** (mandatory):
 # MAGIC   - The name of the target schema.
+# MAGIC   - **Note**:
+# MAGIC     - Only applicable if a single schema is given in `Source Schema(s)`.
 # MAGIC * **`Target UC Schema Location`** (optional):
 # MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add the a default location (managed) for the schema.
 # MAGIC   - **Note**:
+# MAGIC     - Only applicable if a single schema is given in `Source Schema(s)`.
 # MAGIC     - If you add location to the Create Catalog and the Create Schema at the same time, the schema's managed location will be used.
 # MAGIC   - Prerequisite:
 # MAGIC     - `CREATE MANAGED STORAGE` privilege on the external location
 # MAGIC * **`Target UC Schema Comment`** (optional):
+# MAGIC   - Only applicable if a single schema is given in `Source Schema(s)`.
 # MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Configuration
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Set Spark Configuration
+
+# COMMAND ----------
+
+spark.conf.set("spark.databricks.sync.command.enableManagedTable", "true")
 
 # COMMAND ----------
 

@@ -423,7 +423,7 @@ def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_tab
       raise e
 
 
-def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: str, source_table: str, target_catalog: str, target_schema: str) -> None:
+def sync_hms_table_to_uc_external(spark: SparkSession, source_schema: str, source_table: str, target_catalog: str, target_schema: str) -> None:
   """
   Using the SYNC TABLE command to upgrade individual or list of hive_metastore external or managed table(s) to external table(s) in Unity Catalog.
   You can use it to create the new table(s) in Unity Catalog from the existing hive_metastore table(s) as well as update the Unity Catalog table(s) when the source tables in hive_metastore are changed.
@@ -501,14 +501,14 @@ def sync_hms_external_table_to_uc_external(spark: SparkSession, source_schema: s
 
 def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target_catalog: str, target_schema: str) -> None:
   """
-  Using the SYNC SCHEMA command to upgrade all eligible hive_metastore external tables in a schema to external tables in a Unity Catalog schema.
+  Using the SYNC SCHEMA command to upgrade all eligible hive_metastore external tables in the given schema(s) to external tables in a Unity Catalog schema(s).
   You can use it to create new tables in Unity Catalog from existing hive_metastore tables as well as update the Unity Catalog tables when the source tables in hive_metastore are changed.
   
   Parameters:
     spark: Active SparkSession
-    source_schema: The name of the source hive_metastore schema
-    target_catalog: The name of the target Unity Catalog catalog
-    target_schema: The name of the target Unity Catalog schema
+    source_schema: The name(s) of the source hive_metastore schema(s). Should be given as a string like "schema_1, schema_2".
+    target_catalog: The name of the target Unity Catalog catalog.
+    target_schema: (optional) The name of the target Unity Catalog schema. Only applicable if a single schema is given in the source_schema.
 
   """
   try:
@@ -517,37 +517,47 @@ def sync_hms_schema_to_uc_schema(spark: SparkSession, source_schema: str, target
       raise ValueError("source_schema input string is empty")
     elif not target_catalog:
       raise ValueError("target_catalog input string is empty")
-    elif not target_schema:
-      raise ValueError("target_schema input string is empty")
       
-    # Set hive_metastore variables
-    hms_catalog = "hive_metastore"
-    hms_schema = source_schema
+    # Create schema list from a string list
+    if source_schema.find(","):
+      # The input is a list of tables in a string
+      schema_list = source_schema.split(", ")
+    else:
+      # The input is a single table
+      schema_list = source_schema
     
-    # Set UC variables
-    uc_catalog = target_catalog
-    uc_schema = target_schema
+    # Iterate through the list of schemas
+    for schema in schema_list:
       
-    # Execute SYNC SCHEMA DRY RUN to check whether there is any table is eligible for SYNC 
-    sync_dry = spark.sql(f"""
-                          SYNC SCHEMA {uc_catalog}.{uc_schema} FROM {hms_catalog}.{hms_schema} DRY RUN;
-                          """)
-    if any("DRY_RUN_SUCCESS" == status for status in [sc.status_code for sc in sync_dry.select("status_code").collect()]):
-      # Execute the SYNC SCHEMA if DRY RUN was successful
-      synced_df = spark.sql(f"""
-                            SYNC SCHEMA {uc_catalog}.{uc_schema} FROM {hms_catalog}.{hms_schema};
+      # Set hive_metastore variables
+      hms_catalog = "hive_metastore"
+      hms_schema = schema
+      
+      # Set UC variables
+      uc_catalog = target_catalog
+      uc_schema = schema
+        
+      # Execute SYNC SCHEMA DRY RUN to check whether there is any table is eligible for SYNC 
+      sync_dry = spark.sql(f"""
+                            SYNC SCHEMA {uc_catalog}.{uc_schema} FROM {hms_catalog}.{hms_schema} DRY RUN;
                             """)
-      
-      # Check the match of HMS and UC tables that have been successfully synced
-      for table in synced_df.filter("status_code = 'SUCCESS'").collect():
-        print(f"Table {hms_catalog}.{hms_schema}.{table['source_name']} has successfully synced to {uc_catalog}.{uc_schema}.{table['target_name']}")
+      if any("DRY_RUN_SUCCESS" == status for status in [sc.status_code for sc in sync_dry.select("status_code").collect()]):
+        # Execute the SYNC SCHEMA if DRY RUN was successful
+        synced_df = spark.sql(f"""
+                              SYNC SCHEMA {uc_catalog}.{uc_schema} FROM {hms_catalog}.{hms_schema};
+                              """)
         
         # Check the match of HMS and UC tables that have been successfully synced
-        check_equality_of_hms_uc_table(spark, hms_schema, table["source_name"], uc_catalog, uc_schema, table["target_name"])
+        for table in synced_df.filter("status_code = 'SUCCESS'").collect():
+          print(f"Table {hms_catalog}.{hms_schema}.{table['source_name']} has successfully synced to {uc_catalog}.{uc_schema}.{table['target_name']}")
+          
+          # Check the match of HMS and UC tables that have been successfully synced
+          check_equality_of_hms_uc_table(spark, hms_schema, table["source_name"], uc_catalog, uc_schema, table["target_name"])
 
-    else:
-      # Raise error
-      raise ValueError(f"There is no eligible table in {hms_catalog}.{hms_schema} to SYNC to Unity Catalog")
+      else:
+        # Raise error
+        status_code = sync_dry.select("status_code").collect()[0][0]
+        raise ValueError(f"There is no eligible table in {hms_catalog}.{hms_schema} to SYNC to Unity Catalog. Status code: {status_code}")
       
   except (ValueError, U.AnalysisException) as e:
     if isinstance(e, ValueError):
