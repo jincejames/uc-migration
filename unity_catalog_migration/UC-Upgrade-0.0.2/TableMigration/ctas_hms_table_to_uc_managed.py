@@ -80,15 +80,15 @@
 # COMMAND ----------
 
 dbutils.widgets.removeAll()
-dbutils.widgets.text("source_table_type", "Choose MANAGED OR EXTERNAL", "Source Table(s) Type")
+dbutils.widgets.dropdown("source_table_type", "", ["", "MANAGED", "EXTERNAL"], "Source Table(s) Type")
 dbutils.widgets.text("source_schema", "", "Source Schema")
 dbutils.widgets.text("source_table", "", "Source Table(s)")
-dbutils.widgets.text("create_target_catalog", "", "Create Target UC Catalog")
+dbutils.widgets.dropdown("create_target_catalog", "N", ["N", "Y"], "Create Target UC Catalog")
 dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
 dbutils.widgets.text("target_catalog_location", "", "Target UC Catalog Location")
 dbutils.widgets.text("target_schema", "", "Target UC Schema")
-dbutils.widgets.text("create_target_schema", "", "Create Target UC Schema")
+dbutils.widgets.dropdown("create_target_schema", "N", ["N", "Y"], "Create Target UC Schema")
 dbutils.widgets.text("target_schema_comment", "", "Target UC Schema Comment")
 dbutils.widgets.text("target_schema_location", "", "Target UC Schema Location")
 dbutils.widgets.text("target_table", "", "Target UC Table")

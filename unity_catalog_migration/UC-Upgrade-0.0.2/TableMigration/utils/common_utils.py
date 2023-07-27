@@ -1,4 +1,5 @@
 import re
+import collections
 
 import pyspark.sql.utils as U
 from pyspark.sql import SparkSession
@@ -48,7 +49,7 @@ def create_uc_catalog(spark: SparkSession, catalog_name: str, schema_name: str, 
       raise ValueError("catalog_name is empty")
     
     # The default create catalog statement
-    create_catalog_stmt = f"CREATE CATALOG IF {catalog_name}"
+    create_catalog_stmt = f"CREATE CATALOG IF NOT EXISTS {catalog_name}"
     
     if comment: 
       # Add COMMENT to the create catalog statement
@@ -56,7 +57,7 @@ def create_uc_catalog(spark: SparkSession, catalog_name: str, schema_name: str, 
     
     if location:
       # Add LOCATION to the create catalog statement
-      create_catalog_stmt += f" LOCATION {location}"
+      create_catalog_stmt += f" MANAGED LOCATION '{location}'"
     
     # Execute the create catalog statement
     spark.sql(create_catalog_stmt)
@@ -90,7 +91,7 @@ def create_uc_schema(spark: SparkSession, catalog_name: str, schema_name: str, l
       raise ValueError("schema_name is empty")
     
     # The default create schema statement
-    create_schema_stmt = f"CREATE SCHEMA {catalog_name}.{schema_name}"
+    create_schema_stmt = f"CREATE SCHEMA IF NOT EXISTS {catalog_name}.{schema_name}"
 
     if comment: 
     
@@ -99,7 +100,7 @@ def create_uc_schema(spark: SparkSession, catalog_name: str, schema_name: str, l
     
     if location:
       # Add LOCATION to the create schema statement
-      create_schema_stmt += f" LOCATION {location}"
+      create_schema_stmt += f" MANAGED LOCATION '{location}'"
     
     # Execute the create schema statement
     spark.sql(create_schema_stmt)
@@ -163,6 +164,7 @@ def create_external_location_from_mount(spark: SparkSession, dbutils: DBUtils, t
 
   Parameters:
     spark: Active SparkSession
+    dbutils: Databricks Utilities
     tables_descriptions: The list of dictionaries of the mounted tables' descriptions. Including 'Location', 'Database', 'Table', 'Type', and 'Provider'.
     storage_credential: The named storage credential used to connect to this location
     location_name_prefix: (Optional) Prefix for the external location name to be created
@@ -261,3 +263,112 @@ def create_hms_schema(spark: SparkSession, schema_name: str, location: str = "",
         elif isinstance(e, U.AnalysisException):
           print(f"AnalysisException occurred: {e}")
           raise e
+
+def get_the_object_external_location(dbutils: DBUtils, object_type: str, location: str) -> str:
+  """
+  Get the cloud storage path of the object location as an external location.
+
+  Parameters:
+    dbutils: Databricks Utilities
+    object_type: Object type name, either 'table', 'schema', or 'catalog'.
+    location: The location of the object
+
+  Returns
+    The cloud storage path as external location of the object location
+  """
+
+  try:
+    if not object_type:
+      raise ValueError("object_type input string is empty")
+    elif not location:
+      raise ValueError("location input string is empty")
+
+    # Extract the mounts
+    mounts = dbutils.fs.mounts()
+
+    # Iterate through the mounts and return the external location
+    for mount in mounts:
+      if location.startswith(f"dbfs:{mount.mountPoint}/"):
+        # Extract the mount point location
+        external_location = location.replace(f"dbfs:{mount.mountPoint}/", mount.source).replace(f"%20", " ")
+        break
+
+      elif location[0:6] == "dbfs:/":
+        
+        if object_type.lower() == "table":
+          # Pass, let gets the default location
+          pass
+        else:
+          # Set database/schema/catalog location to None if it is on DBFS
+          external_location = None
+      
+      else:
+    
+        # Set the external location to the current database/schema location
+        external_location = location
+      
+    # Set external location to location if the location does not exist as mount point
+    if object_type == "table":
+      # Set external location if it is not DBFS
+      external_location = external_location if external_location else location
+      if external_location[0:6] == "dbfs:/":
+        # Raise error if location is DBFS
+        raise ValueError(f"The location {location} is DBFS. It needs to be migrated away with data movement")
+    else:
+      # Set location that calculated in the loop
+      external_location
+
+    return external_location
+
+  except ValueError as e:
+    print(f"ValueError occurred: {e}")
+    raise e
+
+
+# Expected output for get_schema_detail
+SchemaDetails = collections.namedtuple("SchemaDetails", ["database", "location", "external_location"])
+
+
+def get_schema_detail(spark: SparkSession, dbutils: DBUtils, schema_name: str) -> SchemaDetails:
+    """
+    Get the Schema Details
+    
+    Parameter:
+      spark: The active SparkSession
+      dbutils: Databricks Utilities
+      schema_name: Name of the database/schema
+    
+    Returns:
+      SchemaDetails of database including "database", "location", "external_location".
+      
+    """
+    try:
+      if not schema_name:
+        raise ValueError("schema_name is not given")
+
+      # Itearate through the rows of the describe schema output
+      for r in spark.sql(f"describe schema {schema_name}").collect():
+        if r['database_description_item'] == 'Namespace Name':
+              # Extract the schema/database name
+              db_name = r['database_description_value']            
+        if r['database_description_item'] == 'Location':
+              # Extract the schema/database location
+              db_location = r['database_description_value'] 
+
+              # Get the exact external location path of the schema/database location
+              db_external_location = get_the_object_external_location(dbutils, "schema", db_location)
+      
+      return SchemaDetails (
+          database=db_name,
+          location=db_location,
+          external_location=db_external_location
+      )
+        
+    except (ValueError, U.AnalysisException) as e:
+          if isinstance(e, ValueError):
+            print(f"ValueError occurred: {e}")
+            raise e
+          elif isinstance(e, U.AnalysisException):
+            print(f"AnalysisException occurred: {e}")
+            raise e
+

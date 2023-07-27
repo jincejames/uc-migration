@@ -38,6 +38,8 @@
 # MAGIC ### Unity Catalog parameters
 # MAGIC * **`Migration UC Catalog Name`** (mandatory):
 # MAGIC   - The name of the Unity Catalog catalog that you want to use for the UC migration demo
+# MAGIC * **`Migration UC Catalog Location`** (optional):
+# MAGIC   - The location of the Unity Catalog catalog that you want to use for the UC migration demo  
 # MAGIC * **`List of Principals`** (mandatory): 
 # MAGIC   - The list of principals (users, groups, service principals) that you want to use for the UC migration demo.
 # MAGIC     - If you like to add multiple principals: "user1, group1, user2, group2, sp1, sp2".
@@ -67,6 +69,7 @@ dbutils.widgets.text("abfss_application_id", "", "abfss Application Id")
 dbutils.widgets.text("abfss_directory_id", "", "abfss Directory Id")
 # UC widgets
 dbutils.widgets.text("migration_catalog", "", "Migration UC Catalog Name")
+dbutils.widgets.text("migration_catalog_location", "", "Migration UC Catalog Location")
 dbutils.widgets.text("principal_list", "", "List of Principals")
 # Clear Environment
 dbutils.widgets.dropdown("clear_env","N", "NY", "Clear the migration environment?")
@@ -96,6 +99,7 @@ abfss_directory_id = dbutils.widgets.get("abfss_directory_id")
 
 # UC variables
 migration_catalog = dbutils.widgets.get("migration_catalog")
+migration_catalog_location = dbutils.widgets.get("migration_catalog_location")
 principal_list = dbutils.widgets.get("principal_list")
 
 # Clear environment variable
@@ -258,7 +262,7 @@ for i in range(4):
 
 # COMMAND ----------
 
-spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs LOCATION 'dbfs:{mount_name}/db_managed_schema_outside_of_dbfs'")
+spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_mount LOCATION 'dbfs:{mount_name}/managed_schema_outside_of_dbfs_mount'")
 
 # COMMAND ----------
 
@@ -276,7 +280,7 @@ for i in range(4):
     .table("samples.nyctaxi.trips")
     .write
     .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs.managed_table_outside_dbfs_{i}")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_{i}")
     )
 
 # COMMAND ----------
@@ -286,7 +290,51 @@ for i in range(4):
   .table(f'samples.{row.database}.{row.tableName}')
   .write
   .format("delta")
-  .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs.managed_outside_dbfs_{row.database}_{row.tableName}")
+  .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_outside_dbfs_{row.database}_{row.tableName}")
+  ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Create Managed HMS Tables outside of DBFS with 'abfss' access
+# MAGIC This is when the parent database has its location set to external paths, e.g. a configured 'abfss' path from the cloud object storage
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Create Managed HMS Database on 'abfss' path
+
+# COMMAND ----------
+
+spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_abfss LOCATION '{abfss_root_path}/managed_schema_outside_of_dbfs_abfss'")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Create HMS Managed Table
+
+# COMMAND ----------
+
+for i in range(4):
+  if i == 0:
+    pass
+  else:
+    (spark
+    .read
+    .table("samples.nyctaxi.trips")
+    .write
+    .mode("overwrite")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_{i}")
+    )
+
+# COMMAND ----------
+
+[(spark
+  .read
+  .table(f'samples.{row.database}.{row.tableName}')
+  .write
+  .format("delta")
+  .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_outside_dbfs_{row.database}_{row.tableName}")
   ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
 
 # COMMAND ----------
@@ -373,7 +421,10 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog}")
+create_catalog_statement = f"CREATE CATALOG IF NOT EXISTS {migration_catalog}"
+if migration_catalog_location:
+  create_catalog_statement += f" MANAGED LOCATION '{migration_catalog_location}'" 
+spark.sql(create_catalog_statement)
 
 # COMMAND ----------
 
@@ -390,7 +441,11 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.external_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_mount")
+
+# COMMAND ----------
+
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_abfss")
 
 # COMMAND ----------
 
@@ -418,6 +473,16 @@ if clear_env == "N":
   raise 
 elif clear_env == "Y":
   print("Clearing the migration environment...")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Clear Unity Catalog
+
+# COMMAND ----------
+
+if clear_env == "Y": 
+  spark.sql(f"DROP CATALOG IF EXISTS {migration_catalog} CASCADE")
 
 # COMMAND ----------
 
@@ -488,13 +553,3 @@ if clear_env == "Y":
 
 if clear_env == "Y":
   dbutils.fs.rm(f"{abfss_root_path}/abfss", recurse=True)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Clear Unity Catalog
-
-# COMMAND ----------
-
-if clear_env == "Y": 
-  spark.sql(f"DROP CATALOG IF EXISTS {migration_catalog} CASCADE")

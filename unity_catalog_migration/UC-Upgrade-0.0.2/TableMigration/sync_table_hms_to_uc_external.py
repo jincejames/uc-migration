@@ -1,8 +1,11 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Seamlessly Upgrade Hive Metastore External Table(s) outside of DBFS with mounted file paths to UC External Table(s) using SYNC
+# MAGIC # Seamlessly Upgrade Hive Metastore External Tables outside of DBFS with mounted file paths in the given schema(s) to UC External Table using SYNC
 # MAGIC
-# MAGIC This notebook will seamlessly migrate the given external table(s) outside of DBFS with mounted file path(s) in a given schema from the Hive metastore to a UC catalog.
+# MAGIC This notebook will seamlessly migrate eligible managed/external table(s) outside of DBFS with direct access through 'abfss' file paths in the given schema from the Hive metastore to a UC catalog.
+# MAGIC
+# MAGIC **LIMITATION**:
+# MAGIC   - Managed/External tables outside of DBFS using **mount points** cannot be used with SYNC as of *07.26.2023*
 # MAGIC
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with **spark.databricks.sql.initial.catalog.name set to hive_metastore** or the base catalog where the external tables will be pulled
@@ -91,12 +94,12 @@ spark.conf.set("spark.databricks.sync.command.enableManagedTable", "true")
 dbutils.widgets.removeAll()
 dbutils.widgets.text("source_schema", "", "Source Schema")
 dbutils.widgets.text("source_table", "", "Source Table(s)")
-dbutils.widgets.text("create_target_catalog", "", "Create Target UC Catalog")
+dbutils.widgets.dropdown("create_target_catalog", "N", ["N", "Y"], "Create Target UC Catalog")
 dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
 dbutils.widgets.text("target_catalog_location", "", "Target UC Catalog Location")
 dbutils.widgets.text("target_schema", "", "Target UC Schema")
-dbutils.widgets.text("create_target_schema", "", "Create Target UC Schema")
+dbutils.widgets.dropdown("create_target_hms_schema", "N", ["N", "Y"], "Create Target HMS Schema")
 dbutils.widgets.text("target_schema_comment", "", "Target UC Schema Comment")
 dbutils.widgets.text("target_schema_location", "", "Target UC Schema Location")
 
@@ -126,7 +129,7 @@ target_schema_location = dbutils.widgets.get("target_schema_location")
 # COMMAND ----------
 
 from utils.table_utils import sync_hms_external_table_to_uc_external
-from utils.common_utils import create_uc_catalog, create_uc_schema
+from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_detail
 
 # COMMAND ----------
 
@@ -152,17 +155,45 @@ if create_target_catalog:
 # MAGIC **Only** if the `Create Schema` parameter is **`Y`**
 # MAGIC - You have the `CREATE SCHEMA` privilege on the applicable catalog
 # MAGIC - You can create the schema on a default location (managed location)
-# MAGIC   - If `Schema Location` is filled with the right path
-# MAGIC     - **Note**: If you add a location for catalog and schema either, the schema location will be used.
 # MAGIC   - You have an external location
 # MAGIC   - If you have the `CREATE MANAGED STORAGE` privilege on the applicable external location
+# MAGIC   - If `Target Schema` and `Target UC Schema Location` are not given:
+# MAGIC     - Dynamically creates the schemas
+# MAGIC       - If the source schema is in **DBFS**, it is being created in the default location
+# MAGIC       - If the source schema is in a **mount point**, it is being created in the abfss path of the mount point
+# MAGIC       - if the source schema is in **abfss path**, it is being created in that path.
+# MAGIC   - If `Target Schema` is given:
+# MAGIC       - If `Target UC Schema Location` is filled with the right path, it is being created in that location.
+# MAGIC       - Otherwise, it is being created in the default location.
+# MAGIC     - **Note**: If you add a location for catalog and schema either, the schema location will be used.
 # MAGIC   - (Optional) Use `Target UC Schema Comment` to add a schema description
+# MAGIC     - Only applicable if a single source schema is added as `Source Schema(s)`. 
 # MAGIC
 
 # COMMAND ----------
 
 if create_target_schema:
-  create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
+
+    # If multiple schemas are given as source_schema and there is no target schema
+    if source_schema and not target_schema and not target_schema_location:
+      
+      # Get the schema details
+      schema_detail = get_schema_detail(spark, dbutils, schema)
+      
+      # Set target schema variables
+      target_schema = getattr(schema_detail, "database")
+      target_schema_location = getattr(schema_detail, "external_location")
+      target_schema_comment = f"Migrated from hive_metastore.{schema} within the same location."
+      
+      # Create Unity Catalog target schema
+      create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
+    
+    # Target schema is given
+    elif source_schema and target_schema:
+      
+      # Create Unity Catalog target schema
+      create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
+    
 
 # COMMAND ----------
 
