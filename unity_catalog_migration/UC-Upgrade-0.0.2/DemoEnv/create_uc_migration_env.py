@@ -1,6 +1,53 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Setup Unity Catalog Migration Environment
+# MAGIC
+# MAGIC **Creating Demo Environment for Table Migration Showcase from Hive Metastore to Unity Catalog**
+# MAGIC
+# MAGIC **Prerequisites:**
+# MAGIC   - You need to have an *Azure Service Principal (App Registration)* with *Storage Blob Data Contributor Role* on the given `Mount Storage Account Name` and `abfss Container Name`
+# MAGIC   - You need to have the *Service Principal secret value* saved as a *Databricks Secret Scope*
+# MAGIC
+# MAGIC **With the notebook, you can create**:
+# MAGIC   - Managed Tables on DBFS
+# MAGIC     - This is when you create a table without giving a location or the parent database doesn't have its location set to an external path
+# MAGIC   - Mount point to the given container as `Mount Storage Account Name` and `Mount Container Name` parameters
+# MAGIC     - Managed Tables outside of DBFS with mounted file paths
+# MAGIC       - This is when the parent database has its location set to an external path, e.g. a mounted path from the cloud object storage
+# MAGIC     - External Tables on outside of DBFS with mounted file paths
+# MAGIC   - External Tables outside of DBFS with abfss path
+# MAGIC     - Tables will be saved in the given `abfss Storage Account Name` and `abfss Container Name parameters`
+# MAGIC   - Managed Tables on outside of DBFS with abfss path
+# MAGIC     - This is when the parent database has its location set to an external path, e.g. to a cloud object storage like ADLS with an abfss path
+# MAGIC     - **Important**:
+# MAGIC       - To be able to create the database in abfss path in your Storage Account's container, you need to add the Azure Credentials to your cluster. Check cell (cmd) 35!
+# MAGIC
+# MAGIC **Add permissions to principals to your newly created Unity Catalog catalog**
+# MAGIC   - Filling the List of Principals' parameters will add 
+# MAGIC     - USE_CATALOG, USE_SCHEMA, CREATE_TABLE, SELECT privileges on *CATALOG* level
+# MAGIC       - It means the given principals will have privileges to use all the schemas, create tables in all the schemas and select all the tables under the catalog 
+# MAGIC
+# MAGIC **Cleaning the created environment**
+# MAGIC   - You can clean the environment with change the `Clear the migration environment?` parameter to "Y".
+# MAGIC   - You have to run manually the cells from cell (cmd) 61!
+# MAGIC
+# MAGIC **Working isolated from each other**:
+# MAGIC   - You can use the same Service Principal or create a new one
+# MAGIC   - You can use the same Storage Account or create a new one
+# MAGIC   - You have to use different containers for the `Mount Container Name` and `abfss Container Name`
+# MAGIC   - You have to change the Hive Metastore Database names and paths
+# MAGIC   - You have to change the Unity Catalog catalog name
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC - Tasks
+# MAGIC   - Describe what the notebook does
+# MAGIC   - What needs to be changed to be able to work isolated from others
+# MAGIC     - Prerequisites
+# MAGIC   - Introduce SPN parameters instead of abfss and mount (consolidate into a single one)
+# MAGIC   - Extend the List of Principals parameter description
 
 # COMMAND ----------
 
@@ -9,28 +56,21 @@
 # MAGIC * **`Clear the migration environment?`** (mandatory):
 # MAGIC   - Drop-down list. By default, it is `N` for No. 
 # MAGIC     - If it is set to `Y`, when you run the cells under **Clear dev environment** section, it will clear the migration environment.
-# MAGIC ### Mount parameters
-# MAGIC * **`Mount Application Id`** (mandatory): 
+# MAGIC ### Service Principal parameters
+# MAGIC * **`Service Principal Application (Client) Id`** (mandatory): 
 # MAGIC   - The application (client) id of the SPN/registered APP.
-# MAGIC * **`Mount Directory Id`** (mandatory):
+# MAGIC * **`Service Principal Directory (Tenant) Id`** (mandatory):
 # MAGIC   - The directory (tenant) id of the SPN/registered APP.
-# MAGIC * **`Mount Key Name`** (mandatory):
+# MAGIC * **`Service Principal Secret Key Name`** (mandatory):
 # MAGIC   - The key name that is created for the secret scope.
-# MAGIC * **`Mount Scope Name`** (mandatory):
-# MAGIC    - The scope name that is created for the secret.
+# MAGIC * **`Service Principal Secret Scope Name`** (mandatory):
+# MAGIC   - The scope name that is created for the secret.
+# MAGIC ### Mount parameters
 # MAGIC * **`Mount Storage Account Name`** (mandatory):
 # MAGIC   - The name of the Storage Account that you want to mount.
 # MAGIC * **`Mount Container Name`** (mandatory): 
 # MAGIC   - The name of the container that you want to mount.
 # MAGIC ### abfss parameters
-# MAGIC * **`abfss Application Id`** (mandatory): 
-# MAGIC   - The application (client) id of the SPN/registered APP.
-# MAGIC * **`abfss Directory Id`** (mandatory):
-# MAGIC   - The directory (tenant) id of the SPN/registered APP.
-# MAGIC * **`abfss Key Name`** (mandatory):
-# MAGIC   - The key name that is created for the secret scope.
-# MAGIC * **`abfss Scope Name`** (mandatory):
-# MAGIC    - The scope name that is created for the secret.
 # MAGIC * **`abfss Storage Account Name`** (mandatory):
 # MAGIC   - The name of the Storage Account that you want to access through abfss.
 # MAGIC * **`abfss Container Name`** (mandatory): 
@@ -38,12 +78,12 @@
 # MAGIC ### Unity Catalog parameters
 # MAGIC * **`Migration UC Catalog Name`** (mandatory):
 # MAGIC   - The name of the Unity Catalog catalog that you want to use for the UC migration demo
-# MAGIC * **`Migration UC Catalog Location`** (optional):
-# MAGIC   - The location of the Unity Catalog catalog that you want to use for the UC migration demo  
 # MAGIC * **`List of Principals`** (mandatory): 
 # MAGIC   - The list of principals (users, groups, service principals) that you want to use for the UC migration demo.
 # MAGIC     - If you like to add multiple principals: "user1, group1, user2, group2, sp1, sp2".
 # MAGIC     - If you like to add a single principal: "user1".
+# MAGIC     - Gives USE_CATALOG, USE_SCHEMA, CREATE_TABLE, SELECT privileges on *CATALOG* level
+# MAGIC       - It means the given principals will have privileges to use all the schemas, create tables in all the schemas and select all the tables under the catalog 
 
 # COMMAND ----------
 
@@ -53,23 +93,19 @@
 # COMMAND ----------
 
 dbutils.widgets.removeAll()
+# Service Principal widgets
+dbutils.widgets.text("sp_scope_name", "", "Service Principal Secret Scope Name")
+dbutils.widgets.text("sp_key_name", "", "Service Principal Secret Key Name")
+dbutils.widgets.text("sp_application_id", "", "Service Principal Application (Client) Id")
+dbutils.widgets.text("sp_directory_id", "", "Service Principal Directory (Tenant) Id")
 # Mount widgets
-dbutils.widgets.text("mount_container_name", "", "Mount Continer Name")
+dbutils.widgets.text("mount_container_name", "", "Mount Container Name")
 dbutils.widgets.text("mount_storage_account_name", "", "Mount Storage Account Name")
-dbutils.widgets.text("mount_scope_name", "", "Mount Scope Name")
-dbutils.widgets.text("mount_key_name", "", "Mount Key Name")
-dbutils.widgets.text("mount_application_id", "", "Mount Application Id")
-dbutils.widgets.text("mount_directory_id", "", "Mount Directory Id")
 # abfss widgets
 dbutils.widgets.text("abfss_container_name", "", "abfss Container Name")
 dbutils.widgets.text("abfss_storage_account_name", "", "abfss Storage Account Name")
-dbutils.widgets.text("abfss_scope_name", "", "abfss Scope Name")
-dbutils.widgets.text("abfss_key_name", "", "abfss Key Name")
-dbutils.widgets.text("abfss_application_id", "", "abfss Application Id")
-dbutils.widgets.text("abfss_directory_id", "", "abfss Directory Id")
 # UC widgets
 dbutils.widgets.text("migration_catalog", "", "Migration UC Catalog Name")
-dbutils.widgets.text("migration_catalog_location", "", "Migration UC Catalog Location")
 dbutils.widgets.text("principal_list", "", "List of Principals")
 # Clear Environment
 dbutils.widgets.dropdown("clear_env","N", "NY", "Clear the migration environment?")
@@ -81,25 +117,22 @@ dbutils.widgets.dropdown("clear_env","N", "NY", "Clear the migration environment
 
 # COMMAND ----------
 
+# service principal variables
+sp_scope_name = dbutils.widgets.get("sp_scope_name")
+sp_key_name = dbutils.widgets.get("sp_key_name")
+sp_application_id = dbutils.widgets.get("sp_application_id")
+sp_directory_id = dbutils.widgets.get("sp_directory_id")
+
 # mount variables
 mount_container_name = dbutils.widgets.get("mount_container_name")
 mount_storage_account_name = dbutils.widgets.get("mount_storage_account_name")
-mount_scope_name = dbutils.widgets.get("mount_scope_name")
-mount_key_name = dbutils.widgets.get("mount_key_name")
-mount_application_id = dbutils.widgets.get("mount_application_id")
-mount_directory_id = dbutils.widgets.get("mount_directory_id")
 
 # abfss variables
 abfss_container_name = dbutils.widgets.get("abfss_container_name")
 abfss_storage_account_name = dbutils.widgets.get("abfss_storage_account_name")
-abfss_scope_name = dbutils.widgets.get("abfss_scope_name")
-abfss_key_name = dbutils.widgets.get("abfss_key_name")
-abfss_application_id = dbutils.widgets.get("abfss_application_id")
-abfss_directory_id = dbutils.widgets.get("abfss_directory_id")
 
 # UC variables
 migration_catalog = dbutils.widgets.get("migration_catalog")
-migration_catalog_location = dbutils.widgets.get("migration_catalog_location")
 principal_list = dbutils.widgets.get("principal_list")
 
 # Clear environment variable
@@ -109,6 +142,18 @@ clear_env = dbutils.widgets.get("clear_env")
 mount_name = f"/mnt/{mount_container_name}"
 # abfss_root_path mustn't be changed
 abfss_root_path = f"abfss://{abfss_container_name}@{abfss_storage_account_name}.dfs.core.windows.net"
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Check if Clear the migration environment set to "Y"
+
+# COMMAND ----------
+
+if clear_env == "Y":
+  print("Clearing the migration dev environment...")
+  dbutils.notebook.run("/Users/baszodi@emea.corpdir.net/Unity Catalog old/unity_catalog_migration/UC-Upgrade-0.0.2/DemoEnv/create_uc_migration_env", 60, arguments={"cellNumber": "63"})
+  dbutils.notebook.exit(f"Migration dev envionment has been cleaned")
 
 # COMMAND ----------
 
@@ -127,16 +172,6 @@ abfss_root_path = f"abfss://{abfss_container_name}@{abfss_storage_account_name}.
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Unmount 
-
-# COMMAND ----------
-
-##Unmount blob storage
-#dbutils.fs.unmount(f"{mount_name}")
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ### Create mount point if not exists
 
 # COMMAND ----------
@@ -147,10 +182,10 @@ else:
   # Mount Blob Storage
   mount_configs = {"fs.azure.account.auth.type": "OAuth",
           "fs.azure.account.oauth.provider.type": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
-          "fs.azure.account.oauth2.client.id": f"{mount_application_id}",
-          "fs.azure.account.oauth2.client.secret": dbutils.secrets.get(scope=f"{mount_scope_name}",
-                                                                       key=f"{mount_key_name}"),
-          "fs.azure.account.oauth2.client.endpoint": f"https://login.microsoftonline.com/{mount_directory_id}/oauth2/token"
+          "fs.azure.account.oauth2.client.id": f"{sp_application_id}",
+          "fs.azure.account.oauth2.client.secret": dbutils.secrets.get(scope=f"{sp_scope_name}",
+                                                                       key=f"{sp_key_name}"),
+          "fs.azure.account.oauth2.client.endpoint": f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token"
           }
 
   # Optionally, you can add <directory-name> to the source URI of your mount point.
@@ -194,13 +229,13 @@ spark.conf.set(
   "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
 spark.conf.set(
   f"fs.azure.account.oauth2.client.id.{abfss_storage_account_name}.dfs.core.windows.net", 
-  f"{abfss_application_id}")
+  f"{sp_application_id}")
 spark.conf.set(
   f"fs.azure.account.oauth2.client.secret.{abfss_storage_account_name}.dfs.core.windows.net", 
-  dbutils.secrets.get(scope=f"{abfss_scope_name}",key=f"{abfss_key_name}"))
+  dbutils.secrets.get(scope=f"{sp_scope_name}",key=f"{sp_key_name}"))
 spark.conf.set(
   f"fs.azure.account.oauth2.client.endpoint.{abfss_storage_account_name}.dfs.core.windows.net", 
-  f"https://login.microsoftonline.com/{abfss_directory_id}/oauth2/token")
+  f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token")
 
 # COMMAND ----------
 
@@ -209,7 +244,7 @@ spark.conf.set(
 
 # COMMAND ----------
 
-dbutils.fs.ls(f"abfss://{abfss_container_name}@{abfss_storage_account_name}.dfs.core.windows.net/")
+dbutils.fs.ls(abfss_root_path)
 
 # COMMAND ----------
 
@@ -252,7 +287,7 @@ for i in range(4):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create Managed HMS Tables outside of DBFS with mounted file paths
+# MAGIC ## Create Managed HMS Tables outside of DBFS *with* mounted file paths
 # MAGIC This is when the parent database has its location set to external paths, e.g. a mounted path from the cloud object storage
 
 # COMMAND ----------
@@ -275,12 +310,32 @@ for i in range(4):
   if i == 0:
     pass
   else:
+    # Delta table
     (spark
     .read
     .table("samples.nyctaxi.trips")
     .write
     .mode("overwrite")
     .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_{i}")
+    )
+
+    # Parquet table
+    (spark
+    .read
+    .table("samples.nyctaxi.trips")
+    .write
+    .format("parquet")
+    .mode("overwrite")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_parquet_{i}")
+    )
+    # CSV table
+    (spark
+    .read
+    .table("samples.nyctaxi.trips")
+    .write
+    .format("csv")
+    .mode("overwrite")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_csv_{i}")
     )
 
 # COMMAND ----------
@@ -296,13 +351,25 @@ for i in range(4):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create Managed HMS Tables outside of DBFS with 'abfss' access
-# MAGIC This is when the parent database has its location set to external paths, e.g. a configured 'abfss' path from the cloud object storage
+# MAGIC ## Create Managed HMS Tables outside of DBFS *without* mounted file paths
+# MAGIC This is when the parent database has its location set to external paths, e.g. to a cloud object storage like ADLS
+# MAGIC
+# MAGIC **Prerequisites**
+# MAGIC   - You need to create a secret scope and a secret key for the Service Principal's secret
+# MAGIC   - Credentials need to be added to your cluster like:
+# MAGIC     - ```
+# MAGIC       fs.azure.account.auth.type.<your_storage_account_name>.dfs.core.windows.net OAuth
+# MAGIC       fs.azure.account.oauth2.client.secret.<your_storage_account_name>.dfs.core.windows.net {{secrets/<your_secret_scope_name>/<your_sercet_key_name>}}
+# MAGIC       fs.azure.account.oauth2.client.id.<storage_account_name>.dfs.core.windows.net <your_service_principal_client_id>
+# MAGIC       fs.azure.account.oauth2.client.endpoint.<storage_account_name>.dfs.core.windows.net https://login.microsoftonline.com/<your_service_principal_directory_id>/oauth2/token
+# MAGIC       fs.azure.account.oauth.provider.type.<storage_account_name>.dfs.core.windows.net org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider
+# MAGIC       ```
+# MAGIC   
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Create Managed HMS Database on 'abfss' path
+# MAGIC ### Create Managed HMS Database on 'abfss' location
 
 # COMMAND ----------
 
@@ -319,12 +386,32 @@ for i in range(4):
   if i == 0:
     pass
   else:
+    # Delta table
     (spark
     .read
     .table("samples.nyctaxi.trips")
     .write
     .mode("overwrite")
     .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_{i}")
+    )
+
+    # Parquet table
+    (spark
+    .read
+    .table("samples.nyctaxi.trips")
+    .write
+    .format("parquet")
+    .mode("overwrite")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_parquet_{i}")
+    )
+    # CSV table
+    (spark
+    .read
+    .table("samples.nyctaxi.trips")
+    .write
+    .format("csv")
+    .mode("overwrite")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_csv_{i}")
     )
 
 # COMMAND ----------
@@ -390,13 +477,31 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
+# Delta
 (spark
  .read
  .table("samples.nyctaxi.trips")
  .write
  .format("delta")
+ .mode("overwrite")
  .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips")
  .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips"))
+# Parquet
+(spark
+ .read
+ .table("samples.nyctaxi.trips")
+ .write
+ .format("parquet")
+ .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_parquet")
+ .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_parquet"))
+# CSV
+(spark
+ .read
+ .table("samples.nyctaxi.trips")
+ .write
+ .format("csv")
+ .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_csv")
+ .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_csv"))
 
 # COMMAND ----------
 
@@ -421,10 +526,7 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
-create_catalog_statement = f"CREATE CATALOG IF NOT EXISTS {migration_catalog}"
-if migration_catalog_location:
-  create_catalog_statement += f" MANAGED LOCATION '{migration_catalog_location}'" 
-spark.sql(create_catalog_statement)
+spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog} MANAGED LOCATION 'abfss://managed-unity-migration-env@rsv0datasolutions0kbca.dfs.core.windows.net/{migration_catalog}'")
 
 # COMMAND ----------
 
@@ -457,8 +559,8 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outsi
 principals = principal_list.split(",")
 for principal in principals:  
   spark.sql(f"""GRANT USE_CATALOG, USE_SCHEMA, CREATE_TABLE, SELECT 
-            ON CATALOG {migration_catalog}
-            TO {principal}
+            ON CATALOG `{migration_catalog}`
+            TO `{principal}`
             """)
 
 # COMMAND ----------
@@ -473,16 +575,6 @@ if clear_env == "N":
   raise 
 elif clear_env == "Y":
   print("Clearing the migration environment...")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Clear Unity Catalog
-
-# COMMAND ----------
-
-if clear_env == "Y": 
-  spark.sql(f"DROP CATALOG IF EXISTS {migration_catalog} CASCADE")
 
 # COMMAND ----------
 
@@ -502,7 +594,22 @@ if clear_env == "Y":
 # COMMAND ----------
 
 if clear_env == "Y":
-  spark.sql("DROP DATABASE IF EXISTS hive_metastore.managed_schema_outside_of_dbfs CASCADE")
+  spark.sql("DROP DATABASE IF EXISTS hive_metastore.managed_schema_outside_of_dbfs_mount CASCADE")
+
+# COMMAND ----------
+
+if clear_env == "Y":
+  spark.sql("DROP DATABASE IF EXISTS hive_metastore.managed_schema_outside_of_dbfs_abfss CASCADE")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Clear External Tables on outside of DBFS
+
+# COMMAND ----------
+
+if clear_env == "Y":
+  spark.sql("DROP DATABASE IF EXISTS hive_metastore.external_schema CASCADE")
 
 # COMMAND ----------
 
@@ -553,3 +660,13 @@ if clear_env == "Y":
 
 if clear_env == "Y":
   dbutils.fs.rm(f"{abfss_root_path}/abfss", recurse=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Clear Unity Catalog
+
+# COMMAND ----------
+
+if clear_env == "Y": 
+  spark.sql(f"DROP CATALOG IF EXISTS {migration_catalog} CASCADE")
