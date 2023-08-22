@@ -9,18 +9,19 @@
 # MAGIC   - You need to have the *Service Principal secret value* saved as a *Databricks Secret Scope*
 # MAGIC
 # MAGIC **With the notebook, you can create**:
-# MAGIC   - Managed Tables on DBFS
-# MAGIC     - This is when you create a table without giving a location or the parent database doesn't have its location set to an external path
-# MAGIC   - Mount point to the given container as `Mount Storage Account Name` and `Mount Container Name` parameters
-# MAGIC     - Managed Tables outside of DBFS with mounted file paths
-# MAGIC       - This is when the parent database has its location set to an external path, e.g. a mounted path from the cloud object storage
-# MAGIC     - External Tables on outside of DBFS with mounted file paths
-# MAGIC   - External Tables outside of DBFS with abfss path
-# MAGIC     - Tables will be saved in the given `abfss Storage Account Name` and `abfss Container Name parameters`
-# MAGIC   - Managed Tables on outside of DBFS with abfss path
-# MAGIC     - This is when the parent database has its location set to an external path, e.g. to a cloud object storage like ADLS with an abfss path
-# MAGIC     - **Important**:
-# MAGIC       - To be able to create the database in abfss path in your Storage Account's container, you need to add the Azure Credentials to your cluster. Check cell (cmd) 35!
+# MAGIC   - If `Clear the migration environment?` parameter set to "N"
+# MAGIC     - Managed Tables on DBFS
+# MAGIC       - This is when you create a table without giving a location or the parent database doesn't have its location set to an external path
+# MAGIC     - Mount point to the given container as `Mount Storage Account Name` and `Mount Container Name` parameters
+# MAGIC       - Managed Tables outside of DBFS with mounted file paths
+# MAGIC         - This is when the parent database has its location set to an external path, e.g. a mounted path from the cloud object storage
+# MAGIC       - External Tables on outside of DBFS with mounted file paths
+# MAGIC     - External Tables outside of DBFS with abfss path
+# MAGIC       - Tables will be saved in the given `abfss Storage Account Name` and `abfss Container Name parameters`
+# MAGIC     - Managed Tables on outside of DBFS with abfss path
+# MAGIC       - This is when the parent database has its location set to an external path, e.g. to a cloud object storage like ADLS with an abfss path
+# MAGIC       - **Important**:
+# MAGIC         - To be able to create the database in abfss path in your Storage Account's container, you need to add the Azure Credentials to your cluster. Check cell (cmd) 35!
 # MAGIC
 # MAGIC **Add permissions to principals to your newly created Unity Catalog catalog**
 # MAGIC   - Filling the List of Principals' parameters will add 
@@ -29,7 +30,6 @@
 # MAGIC
 # MAGIC **Cleaning the created environment**
 # MAGIC   - You can clean the environment with change the `Clear the migration environment?` parameter to "Y".
-# MAGIC   - You have to run manually the cells from cell (cmd) 61!
 # MAGIC
 # MAGIC **Working isolated from each other**:
 # MAGIC   - You can use the same Service Principal or create a new one
