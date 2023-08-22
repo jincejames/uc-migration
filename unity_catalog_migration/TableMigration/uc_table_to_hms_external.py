@@ -4,13 +4,17 @@
 # MAGIC
 # MAGIC This notebook will create External table(s) in a given schema from the Unity Catalog to Hive Metastore.
 # MAGIC
-# MAGIC **CREATE OR REPLACE TABLE LOCATION**
+# MAGIC **Custom sync function**
 # MAGIC
-# MAGIC **IMPORTANT**:
-# MAGIC - Only supported for **Delta Lake tables**
+# MAGIC Syncing tables between two catalogs.
 # MAGIC
-# MAGIC You can create Unity Catalog table(s) from your **External** and **Managed** HMS table(s) without any data movement. With the `CREATE OR REPLACE TABLE LOCATION` command the table metadata will be recreated in the Hive Metastore and Unity Catalog. It keeps the history of the table if it is **Delta**. It doesn't require any data movement.
+# MAGIC **Functionality**:
+# MAGIC - Dropping the target table and recreating it if any of these are different
+# MAGIC   - The source and target tables format
+# MAGIC   - The source and target tables schema
+# MAGIC - Create the target table if it doesn't exist
 # MAGIC
+# MAGIC You can create Unity Catalog table(s) from your **External** and **Managed** HMS table(s) without any data movement. With the `CREATE TABLE LOCATION` command the table metadata will be recreated in the Hive Metastore and Unity Catalog. It keeps the history of the table in HMS and UC as well. It doesn't require any data movement.
 # MAGIC **Before you start the migration**, please double-check the followings:
 # MAGIC
 # MAGIC - Create an [Azure Service Principal](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/service-principals#step-1-create-an-azure-service-principal-in-your-azure-account) and grant Storage Blob Data Contributor Role
@@ -80,8 +84,9 @@ target_schema_comment = dbutils.widgets.get("target_hms_schema_comment")
 target_schema = dbutils.widgets.get("target_hms_schema")
 target_schema_location = dbutils.widgets.get("target_hms_schema_location")
 target_table = dbutils.widgets.get("target_hms_table")
-# Mustn't change the target catalog variable
+# Mustn't be changed variables
 target_catalog = "hive_metastore"
+table_type = "table"
 
 # COMMAND ----------
 
@@ -90,8 +95,8 @@ target_catalog = "hive_metastore"
 
 # COMMAND ----------
 
-from utils.table_utils import get_table_description, create_or_replace_external_table
-from utils.common_utils import create_hms_schema, get_schema_detail
+from utils.table_utils import get_table_description,  sync_table
+from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_detail
 
 # COMMAND ----------
 
@@ -104,7 +109,7 @@ from utils.common_utils import create_hms_schema, get_schema_detail
 
 # COMMAND ----------
 
-tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, "")
+tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, table_type)
 
 # COMMAND ----------
 
@@ -135,7 +140,7 @@ if create_target_schema == "Y":
       # Set target schema variables
       target_schema = getattr(schema_detail, "database")
       target_schema_location = getattr(schema_detail, "external_location")+f"/{source_schema}"
-      target_schema_comment = f"Migrated from hive_metastore.{source_schema} within the same location."
+      target_schema_comment = f"Created from {source_catalog}.{source_schema} within the same location."
       
       # Create Unity Catalog target schema
       create_hms_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
@@ -150,10 +155,13 @@ if create_target_schema == "Y":
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Creating hive_metastore External Tables from UC Tables without data movement using the CREATE OR REPLACE TABLE LOCATION command
+# MAGIC ## Sync hive_metastore External Tables from UC Tables without data movement using the custom sync function
 # MAGIC
 # MAGIC Available options:
-# MAGIC - Create all Delta tables outside of DBFS from the given `Source Schema` to the given `Target Catalog`.
+# MAGIC - Keep the HMS and UC tables are in sync via dropping the target table and recreating it if any of these are different:
+# MAGIC   - The source and target tables format
+# MAGIC   - The source and target tables schema
+# MAGIC - Create all tables outside of DBFS from the given `Source Schema` to the given `Target Catalog`.
 # MAGIC   -  and `Target Schema` if given
 # MAGIC   - or `Source Schema` is used as target schema.
 # MAGIC   - Applicable if the `Source UC Table(s)` is empty.
@@ -165,4 +173,18 @@ if create_target_schema == "Y":
 
 # COMMAND ----------
 
-create_or_replace_external_table(spark, dbutils, tables_descriptions, target_catalog, target_schema, target_table)
+# Set empty sync status list
+sync_status_list = []
+
+# Iterate through the table descriptions
+for table_details in tables_descriptions:
+    # Sync table
+    sync_status = sync_table(spark, dbutils, table_details, target_catalog, target_schema, target_table)
+    # Append sync status list
+    sync_status_list.append([sync_status.source_object_type, sync_status.source_object_full_name, sync_status.target_object_full_name, sync_status.sync_status_code, sync_status.sync_status_description])
+    # If status code FAILED, exit notebook
+    if sync_status.sync_status_code == "FAILED":
+      dbutils.notebook.exit(sync_status_list)
+
+if sync_status.sync_status_code == "SUCCESS":
+  dbutils.notebook.exit(sync_status_list)

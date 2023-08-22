@@ -146,18 +146,6 @@ abfss_root_path = f"abfss://{abfss_container_name}@{abfss_storage_account_name}.
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Check if Clear the migration environment set to "Y"
-
-# COMMAND ----------
-
-if clear_env == "Y":
-  print("Clearing the migration dev environment...")
-  dbutils.notebook.run("/Users/baszodi@emea.corpdir.net/Unity Catalog old/unity_catalog_migration/UC-Upgrade-0.0.2/DemoEnv/create_uc_migration_env", 60, arguments={"cellNumber": "63"})
-  dbutils.notebook.exit(f"Migration dev envionment has been cleaned")
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC # Configuration
 
 # COMMAND ----------
@@ -176,23 +164,24 @@ if clear_env == "Y":
 
 # COMMAND ----------
 
-if any(mount.mountPoint == f"{mount_name}" for mount in dbutils.fs.mounts()):
-  print("Mount point already mounted")
-else: 
-  # Mount Blob Storage
-  mount_configs = {"fs.azure.account.auth.type": "OAuth",
-          "fs.azure.account.oauth.provider.type": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
-          "fs.azure.account.oauth2.client.id": f"{sp_application_id}",
-          "fs.azure.account.oauth2.client.secret": dbutils.secrets.get(scope=f"{sp_scope_name}",
-                                                                       key=f"{sp_key_name}"),
-          "fs.azure.account.oauth2.client.endpoint": f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token"
-          }
+if clear_env == "N":
+  if any(mount.mountPoint == f"{mount_name}" for mount in dbutils.fs.mounts()):
+    print("Mount point already mounted")
+  else: 
+    # Mount Blob Storage
+    mount_configs = {"fs.azure.account.auth.type": "OAuth",
+            "fs.azure.account.oauth.provider.type": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
+            "fs.azure.account.oauth2.client.id": f"{sp_application_id}",
+            "fs.azure.account.oauth2.client.secret": dbutils.secrets.get(scope=f"{sp_scope_name}",
+                                                                        key=f"{sp_key_name}"),
+            "fs.azure.account.oauth2.client.endpoint": f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token"
+            }
 
-  # Optionally, you can add <directory-name> to the source URI of your mount point.
-  dbutils.fs.mount(
-    source = f"abfss://{mount_container_name}@{mount_storage_account_name}.dfs.core.windows.net/",
-    mount_point = f"{mount_name}",
-    extra_configs = mount_configs)
+    # Optionally, you can add <directory-name> to the source URI of your mount point.
+    dbutils.fs.mount(
+      source = f"abfss://{mount_container_name}@{mount_storage_account_name}.dfs.core.windows.net/",
+      mount_point = f"{mount_name}",
+      extra_configs = mount_configs)
 
 # COMMAND ----------
 
@@ -201,7 +190,8 @@ else:
 
 # COMMAND ----------
 
-dbutils.fs.ls(f"{mount_name}")
+if clear_env == "N":
+  dbutils.fs.ls(f"{mount_name}")
 
 # COMMAND ----------
 
@@ -221,21 +211,22 @@ dbutils.fs.ls(f"{mount_name}")
 
 # COMMAND ----------
 
-spark.conf.set(
-  f"fs.azure.account.auth.type.{abfss_storage_account_name}.dfs.core.windows.net", 
-  "OAuth")
-spark.conf.set(
-  f"fs.azure.account.oauth.provider.type.{abfss_storage_account_name}.dfs.core.windows.net", 
-  "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
-spark.conf.set(
-  f"fs.azure.account.oauth2.client.id.{abfss_storage_account_name}.dfs.core.windows.net", 
-  f"{sp_application_id}")
-spark.conf.set(
-  f"fs.azure.account.oauth2.client.secret.{abfss_storage_account_name}.dfs.core.windows.net", 
-  dbutils.secrets.get(scope=f"{sp_scope_name}",key=f"{sp_key_name}"))
-spark.conf.set(
-  f"fs.azure.account.oauth2.client.endpoint.{abfss_storage_account_name}.dfs.core.windows.net", 
-  f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token")
+if clear_env == "N":
+  spark.conf.set(
+    f"fs.azure.account.auth.type.{abfss_storage_account_name}.dfs.core.windows.net", 
+    "OAuth")
+  spark.conf.set(
+    f"fs.azure.account.oauth.provider.type.{abfss_storage_account_name}.dfs.core.windows.net", 
+    "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+  spark.conf.set(
+    f"fs.azure.account.oauth2.client.id.{abfss_storage_account_name}.dfs.core.windows.net", 
+    f"{sp_application_id}")
+  spark.conf.set(
+    f"fs.azure.account.oauth2.client.secret.{abfss_storage_account_name}.dfs.core.windows.net", 
+    dbutils.secrets.get(scope=f"{sp_scope_name}",key=f"{sp_key_name}"))
+  spark.conf.set(
+    f"fs.azure.account.oauth2.client.endpoint.{abfss_storage_account_name}.dfs.core.windows.net", 
+    f"https://login.microsoftonline.com/{sp_directory_id}/oauth2/token")
 
 # COMMAND ----------
 
@@ -244,7 +235,8 @@ spark.conf.set(
 
 # COMMAND ----------
 
-dbutils.fs.ls(abfss_root_path)
+if clear_env == "N":
+  dbutils.fs.ls(abfss_root_path)
 
 # COMMAND ----------
 
@@ -263,7 +255,8 @@ dbutils.fs.ls(abfss_root_path)
 
 # COMMAND ----------
 
-spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.managed_dbfs_schema")
+if clear_env == "N":
+  spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.managed_dbfs_schema")
 
 # COMMAND ----------
 
@@ -272,17 +265,21 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.managed_dbfs_schema")
 
 # COMMAND ----------
 
-for i in range(4):
-  if i == 0:
-    pass
-  else:
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_dbfs_schema.dbfs_managed_table_{i}")
-    )
+if clear_env == "N":
+  for i in range(4):
+    if i == 0:
+      pass
+    else:
+      # Create table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_dbfs_schema.dbfs_managed_table_{i}")
+      )
+      # Create view
+      (spark.sql(f"CREATE OR REPLACE VIEW hive_metastore.managed_dbfs_schema.vw_dbfs_managed_table_{i} AS SELECT * FROM hive_metastore.managed_dbfs_schema.dbfs_managed_table_{i} LIMIT 100"))
 
 # COMMAND ----------
 
@@ -297,7 +294,8 @@ for i in range(4):
 
 # COMMAND ----------
 
-spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_mount LOCATION 'dbfs:{mount_name}/managed_schema_outside_of_dbfs_mount'")
+if clear_env == "N":
+  spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_mount LOCATION 'dbfs:{mount_name}/managed_schema_outside_of_dbfs_mount'")
 
 # COMMAND ----------
 
@@ -306,47 +304,51 @@ spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_
 
 # COMMAND ----------
 
-for i in range(4):
-  if i == 0:
-    pass
-  else:
-    # Delta table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_{i}")
-    )
+if clear_env == "N":
+  for i in range(4):
+    if i == 0:
+      pass
+    else:
+      # Delta table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_{i}")
+      )
+      # Create view
+      (spark.sql(f"CREATE OR REPLACE VIEW hive_metastore.managed_schema_outside_of_dbfs_mount.vw_managed_table_outside_dbfs_{i} AS SELECT * FROM hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_{i} LIMIT 100"))
 
-    # Parquet table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .format("parquet")
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_parquet_{i}")
-    )
-    # CSV table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .format("csv")
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_csv_{i}")
-    )
+      # Parquet table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_parquet_{i}")
+      )
+      # CSV table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_table_outside_dbfs_csv_{i}")
+      )
 
 # COMMAND ----------
 
-[(spark
-  .read
-  .table(f'samples.{row.database}.{row.tableName}')
-  .write
-  .format("delta")
-  .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_outside_dbfs_{row.database}_{row.tableName}")
-  ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
+if clear_env == "N":
+  [(spark
+    .read
+    .table(f'samples.{row.database}.{row.tableName}')
+    .write
+    .format("delta")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_mount.managed_outside_dbfs_{row.database}_{row.tableName}")
+    ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
 
 # COMMAND ----------
 
@@ -373,7 +375,8 @@ for i in range(4):
 
 # COMMAND ----------
 
-spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_abfss LOCATION '{abfss_root_path}/managed_schema_outside_of_dbfs_abfss'")
+if clear_env == "N":
+  spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_of_dbfs_abfss LOCATION '{abfss_root_path}/managed_schema_outside_of_dbfs_abfss'")
 
 # COMMAND ----------
 
@@ -382,47 +385,51 @@ spark.sql(f"CREATE DATABASE if not exists hive_metastore.managed_schema_outside_
 
 # COMMAND ----------
 
-for i in range(4):
-  if i == 0:
-    pass
-  else:
-    # Delta table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_{i}")
-    )
+if clear_env == "N":
+  for i in range(4):
+    if i == 0:
+      pass
+    else:
+      # Delta table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_{i}")
+      )
+      # Create view
+      (spark.sql(f"CREATE OR REPLACE VIEW hive_metastore.managed_schema_outside_of_dbfs_abfss.vw_managed_table_outside_dbfs_{i} AS SELECT * FROM hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_{i} LIMIT 100"))
 
-    # Parquet table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .format("parquet")
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_parquet_{i}")
-    )
-    # CSV table
-    (spark
-    .read
-    .table("samples.nyctaxi.trips")
-    .write
-    .format("csv")
-    .mode("overwrite")
-    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_csv_{i}")
-    )
+      # Parquet table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_parquet_{i}")
+      )
+      # CSV table
+      (spark
+      .read
+      .table("samples.nyctaxi.trips")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_table_outside_dbfs_csv_{i}")
+      )
 
 # COMMAND ----------
 
-[(spark
-  .read
-  .table(f'samples.{row.database}.{row.tableName}')
-  .write
-  .format("delta")
-  .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_outside_dbfs_{row.database}_{row.tableName}")
-  ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
+if clear_env == "N":
+  [(spark
+    .read
+    .table(f'samples.{row.database}.{row.tableName}')
+    .write
+    .format("delta")
+    .saveAsTable(f"hive_metastore.managed_schema_outside_of_dbfs_abfss.managed_outside_dbfs_{row.database}_{row.tableName}")
+    ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
 
 # COMMAND ----------
 
@@ -441,7 +448,8 @@ for i in range(4):
 
 # COMMAND ----------
 
-spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
+if clear_env == "N":
+  spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
@@ -450,25 +458,27 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
-(spark
- .read
- .table("samples.nyctaxi.trips")
- .write
- .format("delta")
- .option("path", f"dbfs:{mount_name}/mount/delta/nyctaxi/trips")
- .saveAsTable("hive_metastore.external_schema.external_mount_nyctaxi_trips"))
+if clear_env == "N":
+  (spark
+  .read
+  .table("samples.nyctaxi.trips")
+  .write
+  .format("delta")
+  .option("path", f"dbfs:{mount_name}/mount/delta/nyctaxi/trips")
+  .saveAsTable("hive_metastore.external_schema.external_mount_nyctaxi_trips"))
 
 # COMMAND ----------
 
-[(spark
-  .read
-  .table(f'samples.{row.database}.{row.tableName}')
-  .write
-  .format("delta")
-  .mode("overwrite")
-  .option("path", f"dbfs:{mount_name}/mount/delta/tpch/{row.tableName}")
-  .saveAsTable(f"hive_metastore.external_schema.external_mount_{row.database}_{row.tableName}")
-  ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
+if clear_env == "N":
+  [(spark
+    .read
+    .table(f'samples.{row.database}.{row.tableName}')
+    .write
+    .format("delta")
+    .mode("overwrite")
+    .option("path", f"dbfs:{mount_name}/mount/delta/tpch/{row.tableName}")
+    .saveAsTable(f"hive_metastore.external_schema.external_mount_{row.database}_{row.tableName}")
+    ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
 
 # COMMAND ----------
 
@@ -477,47 +487,56 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
-# Delta
-(spark
- .read
- .table("samples.nyctaxi.trips")
- .write
- .format("delta")
- .mode("overwrite")
- .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips")
- .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips"))
-# Parquet
-(spark
- .read
- .table("samples.nyctaxi.trips")
- .write
- .format("parquet")
- .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_parquet")
- .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_parquet"))
-# CSV
-(spark
- .read
- .table("samples.nyctaxi.trips")
- .write
- .format("csv")
- .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_csv")
- .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_csv"))
+if clear_env == "N":
+  # Delta
+  (spark
+  .read
+  .table("samples.nyctaxi.trips")
+  .write
+  .format("delta")
+  .mode("overwrite")
+  .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips")
+  .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips"))
+  # Create view
+  (spark.sql(f"CREATE OR REPLACE VIEW hive_metastore.external_schema.vw_external_abfss_nyctaxi_trips AS SELECT * FROM hive_metastore.external_schema.external_abfss_nyctaxi_trips LIMIT 100"))
+  # Parquet
+  (spark
+  .read
+  .table("samples.nyctaxi.trips")
+  .write
+  .format("parquet")
+  .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_parquet")
+  .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_parquet"))
+  # CSV
+  (spark
+  .read
+  .table("samples.nyctaxi.trips")
+  .write
+  .format("csv")
+  .option("path", f"{abfss_root_path}/abfss/delta/nyctaxi/trips_csv")
+  .saveAsTable("hive_metastore.external_schema.external_abfss_nyctaxi_trips_csv"))
 
 # COMMAND ----------
 
-[(spark
-  .read
-  .table(f'samples.{row.database}.{row.tableName}')
-  .write
-  .format("delta")
-  .option("path", f"{abfss_root_path}/abfss/delta/tpch/{row.tableName}")
-  .saveAsTable(f"hive_metastore.external_schema.external_abfss_{row.database}_{row.tableName}")
-  ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
+if clear_env == "N":
+  [(spark
+    .read
+    .table(f'samples.{row.database}.{row.tableName}')
+    .write
+    .format("delta")
+    .option("path", f"{abfss_root_path}/abfss/delta/tpch/{row.tableName}")
+    .saveAsTable(f"hive_metastore.external_schema.external_abfss_{row.database}_{row.tableName}")
+    ) for row in spark.sql("SHOW TABLES IN samples.tpch").collect()]
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Create Unity Catalog Dev Environment
+# MAGIC ## Create Hive Metastore Database for sync Hive Metastore tables to Unity Catalog
+
+# COMMAND ----------
+
+if clear_env == "N":
+  spark.sql("CREATE SCHEMA IF NOT EXISTS hive_metastore.external_schema_from_uc")
 
 # COMMAND ----------
 
@@ -526,7 +545,8 @@ spark.sql("CREATE DATABASE IF NOT EXISTS hive_metastore.external_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog} MANAGED LOCATION 'abfss://managed-unity-migration-env@rsv0datasolutions0kbca.dfs.core.windows.net/{migration_catalog}'")
+if clear_env == "N":
+  spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog} MANAGED LOCATION 'abfss://managed-unity-migration-env@rsv0datasolutions0kbca.dfs.core.windows.net/{migration_catalog}'")
 
 # COMMAND ----------
 
@@ -535,19 +555,23 @@ spark.sql(f"CREATE CATALOG IF NOT EXISTS {migration_catalog} MANAGED LOCATION 'a
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_dbfs_schema")
+if clear_env == "N":
+  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_dbfs_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.external_schema")
+if clear_env == "N":
+  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.external_schema")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_mount")
+if clear_env == "N":
+  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_mount")
 
 # COMMAND ----------
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_abfss")
+if clear_env == "N":
+  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outside_of_dbfs_abfss")
 
 # COMMAND ----------
 
@@ -556,12 +580,13 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {migration_catalog}.managed_schema_outsi
 
 # COMMAND ----------
 
-principals = principal_list.split(",")
-for principal in principals:  
-  spark.sql(f"""GRANT USE_CATALOG, USE_SCHEMA, CREATE_TABLE, SELECT 
-            ON CATALOG `{migration_catalog}`
-            TO `{principal}`
-            """)
+if clear_env == "N":
+  principals = principal_list.split(",")
+  for principal in principals:  
+    spark.sql(f"""GRANT USE_CATALOG, USE_SCHEMA, CREATE_TABLE, SELECT 
+              ON CATALOG `{migration_catalog}`
+              TO `{principal}`
+              """)
 
 # COMMAND ----------
 
@@ -610,6 +635,16 @@ if clear_env == "Y":
 
 if clear_env == "Y":
   spark.sql("DROP DATABASE IF EXISTS hive_metastore.external_schema CASCADE")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Clear External Schema that used for sync from Unity Catalog
+
+# COMMAND ----------
+
+if clear_env == "Y":
+  spark.sql(f"DROP DATABASE IF EXISTS hive_metastore.external_schema_from_uc CASCADE")
 
 # COMMAND ----------
 

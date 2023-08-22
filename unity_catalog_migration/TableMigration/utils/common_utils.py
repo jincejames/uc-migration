@@ -1,7 +1,9 @@
 import re
 import collections
+from dataclasses import dataclass
 
 import pyspark.sql.utils as U
+import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
 from pyspark.dbutils import DBUtils
 
@@ -372,3 +374,134 @@ def get_schema_detail(spark: SparkSession, dbutils: DBUtils, schema_name: str) -
             print(f"AnalysisException occurred: {e}")
             raise e
 
+@dataclass
+class TableDDL:
+    requested_object_name: str = None
+    catalog_name: str = None
+    schema_name: str = None
+    original_ddl: str = None
+    full_table_name: str = None
+    table_schema: str = None
+    using: str = None
+    partition_by: str = None
+    cluster_by: str = None
+    table_properties: str = None
+    comment: str = None
+    options: str = None
+    location: str = None
+    dynamic_ddl: str = None
+
+
+def get_create_table_stmt(spark: SparkSession, catalog: str, schema: str, table: str) -> TableDDL:
+  """
+  Getting the create table statement
+  
+  Parameters:
+    spark: Active SparkSession
+    catalog: The name of the catalog
+    schema: The name of the schema
+    table: The name of the table
+
+  Returns:
+    The TableDDL object
+  """
+  try:
+
+    if not catalog:
+      raise ValueError("catalog input string is empty")
+    elif not schema:
+      raise ValueError("schema input string is empty")
+    elif not table:
+      raise ValueError("table input string is empty")
+
+    table_ddl = TableDDL()
+
+    # Set full table name
+    full_table_name = f"{catalog}.{schema}.{table}"
+
+    # Create table definition DataFrame
+    table_definition_df = (spark.sql(f"SHOW CREATE TABLE {full_table_name}")
+                            .withColumn("createtab_stmt", F.regexp_replace(F.col("createtab_stmt"), "\n", " "))
+                            .withColumn("full_table_name", 
+                                        F.regexp_extract(F.col("createtab_stmt"), 
+                                                        r"^CREATE (TABLE|VIEW) ([A-Za-z0-9._]+) \(", 2))
+                            .withColumn("location", 
+                                        F.regexp_extract(F.col("createtab_stmt"), 
+                                                        r"LOCATION '([^']+)'", 1))
+                            .withColumn("schema", 
+                                        F.regexp_extract(F.col("createtab_stmt"), 
+                                                        r"^CREATE (TABLE|VIEW) ([A-Za-z0-9._]+) +\((.+?)\)", 3))
+                            .withColumn("using",
+                                        F.regexp_extract(F.col("createtab_stmt"),
+                                                        r"(?<=USING\s)(\w+)(?=\s)", 0))
+                            .withColumn("partition_by",
+                                        F.regexp_extract(F.col("createtab_stmt"),
+                                                        r"PARTITIONED BY \((.*?)\)", 1))
+                            .withColumn("cluster_by",
+                                        F.regexp_extract(F.col("createtab_stmt"),
+                                                        r"CLUSTER BY \((.*?)\)", 1))
+                            .withColumn("table_properties",
+                                        F.regexp_extract(F.col("createtab_stmt"),
+                                                        r"TBLPROPERTIES \(\s*(.*?)\s*\)", 1))
+                            .withColumn("comment", 
+                                        F.regexp_extract(F.col("createtab_stmt"), 
+                                                        r"COMMENT '([^']+)'", 1))
+                            .withColumn("options",
+                                        F.regexp_extract(F.col("createtab_stmt"), 
+                                                        r"OPTIONS \((.*?)\)", 1))
+                            .withColumn("dynamic_ddl", 
+                                        F.regexp_replace(F.col("createtab_stmt"), 
+                                                        r"^CREATE (TABLE|VIEW) ([A-Za-z0-9._]+) \(", "CREATE $1 <<full_table_name>> ("))
+                            .withColumn("dynamic_ddl", 
+                                        F.regexp_replace(F.col("dynamic_ddl"), 
+                                                        r"LOCATION '([^']+)'", "LOCATION '<<location>>'"))
+                            .withColumn("dynamic_ddl", 
+                                        F.regexp_replace(F.col("dynamic_ddl"), 
+                                                        r"^CREATE (TABLE|VIEW) ([^(]+)\((.+?)\)", "CREATE $1 $2 (<<schema>>)"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"(?<=USING\s)(\w+)(?=\s)", " <<using>>"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"PARTITIONED BY \((.*?)\)", "PARTITIONED BY (<<partition_by>>)"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"COMMENT '([^']+)'", "COMMENT '<<comment>>'"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"CLUSTER BY \((.*?)\)", "CLUSTER BY (<<cluster_by>>)"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"TBLPROPERTIES \(\s*(.*?)\s*\)", "TBLPROPERTIES(<<table_properties>>)"))
+                            .withColumn("dynamic_ddl",
+                                        F.regexp_replace(F.col("dynamic_ddl"),
+                                                        r"OPTIONS \((.*?)\)", "OPTIONS (<<options>>)"))
+                            )
+    
+    # Set table_ddl attributes
+
+    table_ddl.requested_object_name = table
+    table_ddl.catalog_name = catalog
+    table_ddl.schema_name = schema
+    table_ddl.original_ddl = table_definition_df.select("createtab_stmt").collect()[0][0]
+    table_ddl.full_table_name = table_definition_df.select("full_table_name").collect()[0][0]
+    table_ddl.table_schema = table_definition_df.select("schema").collect()[0][0]
+    table_ddl.using = table_definition_df.select("using").collect()[0][0]
+    table_ddl.partition_by = table_definition_df.select("partition_by").collect()[0][0]
+    table_ddl.cluster_by = table_definition_df.select("cluster_by").collect()[0][0]
+    table_ddl.table_properties = table_definition_df.select("table_properties").collect()[0][0]
+    table_ddl.comment = table_definition_df.select("comment").collect()[0][0]
+    table_ddl.options = table_definition_df.select("options").collect()[0][0]
+    table_ddl.location = table_definition_df.select("location").collect()[0][0]
+    table_ddl.dynamic_ddl = table_definition_df.select("dynamic_ddl").collect()[0][0]
+
+    return table_ddl
+
+  except (ValueError, U.AnalysisException) as e:
+    if isinstance(e, ValueError):
+      print(f"ValueError occurred: {e}")
+      raise e
+    elif isinstance(e, U.AnalysisException):
+      print(f"AnalysisException occurred: {e}")
+      raise e 
+  

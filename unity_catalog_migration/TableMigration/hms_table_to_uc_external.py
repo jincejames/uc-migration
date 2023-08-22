@@ -7,13 +7,22 @@
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with **spark.databricks.sql.initial.catalog.name set to hive_metastore** or the base catalog where the external tables will be pulled
 # MAGIC - **Tables on DBFS** - this means the files reside completely within DBFS and the only way forward for these are to recreate them via CLONE (*clone_hms_table_to_uc_managed* notebook) or CTAS (*ctas_hms_table_to_uc_managed* notebook). Since if we leave the files in DBFS anybody can read the files of the table.
+# MAGIC - The cluster have to be used wtih **Single User** access mode
 # MAGIC
-# MAGIC **CREATE OR REPLACE TABLE LOCATION**
+# MAGIC **Custom sync function**
+# MAGIC
+# MAGIC Syncing tables between two catalogs.
+# MAGIC
+# MAGIC **Functionality**:
+# MAGIC - Dropping the target table and recreating it if any of these are different
+# MAGIC   - The source and target tables format
+# MAGIC   - The source and target tables schema
+# MAGIC - Create the target table if it doesn't exist
 # MAGIC
 # MAGIC **IMPORTANT**:
-# MAGIC - Only supported for **Delta Lake tables**
+# MAGIC - Hive format is only **supported in Avro and Parquet**
 # MAGIC
-# MAGIC You can create Unity Catalog table(s) from your **External** and **Managed** HMS table(s) without any data movement. With the `CREATE OR REPLACE TABLE LOCATION` command the table metadata will be recreated in the Hive Metastore and Unity Catalog. It keeps the history of the table in HMS and UC as well. It doesn't require any data movement.
+# MAGIC You can create Unity Catalog table(s) from your **External** and **Managed** HMS table(s) without any data movement. With the `CREATE TABLE LOCATION` command the table metadata will be recreated in the Hive Metastore and Unity Catalog. It keeps the history of the table in HMS and UC as well. It doesn't require any data movement.
 # MAGIC
 # MAGIC **Migration away from Mounts points**
 # MAGIC
@@ -112,8 +121,9 @@ target_schema_comment = dbutils.widgets.get("target_schema_comment")
 target_schema = dbutils.widgets.get("target_schema")
 target_schema_location = dbutils.widgets.get("target_schema_location")
 target_table = dbutils.widgets.get("target_table")
-# Source catalog mustn't be changed
+# Variables mustn't be changed
 source_catalog = "hive_metastore"
+table_type = "table"
 
 # COMMAND ----------
 
@@ -122,7 +132,7 @@ source_catalog = "hive_metastore"
 
 # COMMAND ----------
 
-from utils.table_utils import get_table_description,  create_or_replace_external_table
+from utils.table_utils import get_table_description,  sync_table
 from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_detail
 
 # COMMAND ----------
@@ -136,7 +146,7 @@ from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_d
 
 # COMMAND ----------
 
-tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, "")
+tables_descriptions = get_table_description(spark, source_catalog, source_schema, source_table, table_type)
 
 # COMMAND ----------
 
@@ -193,28 +203,35 @@ if create_target_schema == "Y":
       target_schema_comment = f"Migrated from hive_metastore.{source_schema} within the same location."
       
       # Create Unity Catalog target schema
-      create_hms_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
+      create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
     
     # Target schema is given
     elif source_schema and target_schema:
       
       # Create Unity Catalog target schema
-      create_hms_schema(spark, target_schema, target_schema_location, target_schema_comment)
+    #   create_uc_schema(spark, target_schema, target_schema_location, target_schema_comment)
+      create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
     
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Migrating Hive Metastore Tables outside of DBFS to UC External Tables without data movement using the CREATE OR REPLACE TABLE LOCATION command
+# MAGIC ## Sync Hive Metastore Tables outside of DBFS to UC External Tables without data movement using the custom sync function
 # MAGIC
 # MAGIC Available options:
-# MAGIC - Create all Delta tables outside of DBFS from the given `Source Schema` to the given `Target UC Catalog`.
+# MAGIC - Keep the HMS and UC tables are in sync via dropping the target table and recreating it if any of these are different:
+# MAGIC   - The source and target tables format
+# MAGIC   - The source and target tables schema
+# MAGIC - Create all tables outside of DBFS from the given `Source Schema` to the given `Target UC Catalog`.
 # MAGIC   -  and `Target Schema` if given
 # MAGIC   - or `Source Schema` is used as target schema.
 # MAGIC   - Applicable if the `Source Table(s)` is empty.
 # MAGIC - Create the external or managed table(s) from the given Hive Metastore `Source Schema` and `Source Table` to the `Target UC Catalog` and `Target UC Schema`.
 # MAGIC   - Applicable if the `Source Table` is filled.
 # MAGIC   - If `Target HMS Table` is empty, the `Source UC Table(s)`'s name is given to the Unity Catalog table. Only applicable if the `Source UC Table(s)` gets a single table name.
+# MAGIC - **Except**:
+# MAGIC   - None-Parquet or Avro Hive format is not supported
+# MAGIC
 # MAGIC
 # MAGIC **Note**: Equality check between the legacy HMS table(s) and the UC table(s) will run
 
@@ -229,9 +246,21 @@ elif source_schema and not target_schema:
   schema_list = source_schema
 elif target_schema:
   # The input is a single schema in the target schema
-  schema_list = target_schema
+  schema_list = [target_schema]
 
+# Create empty sync status list
+sync_status_list = []
 # Iterate through the list of schemas
 for schema in schema_list:
+  # Iterate through the table descriptions
+  for table_details in tables_descriptions:
+    # Sync table
+    sync_status = sync_table(spark, dbutils, table_details, target_catalog, schema, target_table)
+    # Append sync status list
+    sync_status_list.append([sync_status.source_object_type, sync_status.source_object_full_name, sync_status.target_object_full_name, sync_status.sync_status_code, sync_status.sync_status_description])
+    # If sync status code FAILED, exit notebook
+    if sync_status.sync_status_code == "FAILED":
+      dbutils.notebook.exit(sync_status_list)
 
-  create_or_replace_external_table(spark, dbutils, tables_descriptions, target_catalog, schema, target_table)
+if sync_status.sync_status_code == "SUCCESS":
+  dbutils.notebook.exit(sync_status_list)

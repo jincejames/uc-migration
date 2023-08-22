@@ -1,1 +1,1 @@
-# mb-uc-catalog-design
+# Unity Catalog Migration Scripts

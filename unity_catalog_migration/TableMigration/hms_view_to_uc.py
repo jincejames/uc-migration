@@ -1,48 +1,44 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Seamlessly Upgrade Hive Metastore External Tables outside of DBFS with mounted file paths in the given schema(s) to UC External Table using SYNC
+# MAGIC # Sync Hive Metastore View(s) to UC view(s)
 # MAGIC
-# MAGIC This notebook will seamlessly migrate eligible managed/external table(s) outside of DBFS with direct access through 'abfss' file paths in the given schema from the Hive metastore to a UC catalog.
-# MAGIC
-# MAGIC **LIMITATION**:
-# MAGIC   - Managed/External tables outside of DBFS using **mount points** cannot be used with SYNC as of *07.26.2023*
+# MAGIC This notebook will migrate view(s) from the Hive Metastore to a UC catalog.
 # MAGIC
 # MAGIC **Important:**
 # MAGIC - This notebook needs to run on a cluster with **spark.databricks.sql.initial.catalog.name set to hive_metastore** or the base catalog where the external tables will be pulled
-# MAGIC - **External Tables on DBFS** - this means the files reside completely within DBFS and the only way forward for these are to recreate them via CLONE (*hms-external-to-uc-managed* notebook). Since if we leave the files in DBFS anybody can read the files of the table.
 # MAGIC
-# MAGIC **SYNC** command helps you migrate your existing Hive metastore to the Unity Catalog metastore and also helps to keep both your metastores in sync on an ongoing basis until you completely migrate all your dependent applications from Hive metastore to the Unity Catalog metastore.
+# MAGIC **Custom sync function**
 # MAGIC
-# MAGIC It abstracts all the complexities of migrating a schema and external tables from the Hive metastore to the Unity Catalog metastore and keeping them in sync. Once executed, it analyses the source and target tables or schemas and performs the below operations:
+# MAGIC Syncing views between two catalogs.
 # MAGIC
-# MAGIC 1. If the target table does not exist, the sync operation creates a target table with the same name as the source table in the provided target schema. The owner of the target table will default to the user who is running the SYNC command
-# MAGIC 2. If the target table exists, and if the table is determined to be created by a previous SYNC command or upgraded via Web Interface, the sync operation will update the table such that its schema matches with the schema of the source table.
+# MAGIC **Functionality**:
+# MAGIC - Replacing the target view and recreating it if:
+# MAGIC   - The source and target view definitions are different
+# MAGIC - Create the view if it doesn't exist
 # MAGIC
-# MAGIC **`SYNC TABLE`**: It upgrades table(s) from Hive metastore to the Unity Catalog metastore
-# MAGIC
-# MAGIC **Migration away from Mounts points**
-# MAGIC
-# MAGIC There is no support for mount points with Unity Catalog. Existing mount points should be upgraded to External Locations.
+# MAGIC **IMPORTANT**:
+# MAGIC - Currently, it is **only migrating views to a single target catalog**
+# MAGIC - The **Schema(s) has to exist with the same name in Unity Catalog**
+# MAGIC - The **tables with the same name have to exist in Unity Catalog within their same schema** as in the Hive Metastore
 # MAGIC
 # MAGIC **Note**: Before you start the migration, please double-check the followings:
 # MAGIC - Check out the notebook logic
-# MAGIC - You have an external location in place for the table's mounted file path(s) that you want to migrate.
-# MAGIC - You have `CREATE EXTERNAL TABLE` privileges on the external location(s)
+# MAGIC - You have migrated all the required schema(s) with the same name(s)
+# MAGIC - You have migrated all the required table(s) with the same name(s) for the view(s)
 # MAGIC - You have the right privileges on the UC catalog and schema securable objects
 # MAGIC   - `USE CATALOG`
 # MAGIC   - `USE SCHEMA`
 # MAGIC   - `CREATE TABLE`
-# MAGIC
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Widget parameters
 # MAGIC
-# MAGIC * **`Source Schema`** (mandatory): 
-# MAGIC   - The name of the source HMS schema.
-# MAGIC * **`Source Table(s)`** (optional): 
-# MAGIC   - The name of the source HMS table. Multiple tables should be given as follows "table_1, table_2". If filled only the given table(s) will be pulled otherwise all tables.  
+# MAGIC * **`Source HMS Schema`** (mandatory): 
+# MAGIC   - The name of the source HMS schema(s).
+# MAGIC * **`Source HMS View(s)`** (optional): 
+# MAGIC   - The name of the source HMS view. Multiple views should be given as follows "view_1, view_2". If filled only the given view(s) will be pulled otherwise all the views.
 # MAGIC * **`Create Target UC Catalog`** (optional): 
 # MAGIC   - Fill with `Y` if you want to create the catalog that you give in the `Target UC Catalog`.
 # MAGIC   - Prerequisite:
@@ -53,12 +49,12 @@
 # MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add the a default location (managed) for the catalog.
 # MAGIC   - Prerequisite:
 # MAGIC     - `CREATE MANAGED STORAGE` privilege on the external location
+# MAGIC * **`Target UC Catalog Comment`** (optional):
+# MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add a description to your catalog.
 # MAGIC * **`Create Target UC Schema`** (optional):
 # MAGIC    - Fill with `Y` if you want to create the schema that you give in the `Target UC Schema`.
 # MAGIC   - Prerequisite:
 # MAGIC     - `CREATE SCHEMA` privilege on the `Target UC Catalog`.
-# MAGIC * **`Target UC Catalog Comment`** (optional):
-# MAGIC   - If `Create Target UC Catalog` is filled with `Y`. You can add a description to your catalog.
 # MAGIC * **`Target UC Schema`** (mandatory):
 # MAGIC   - The name of the target schema.
 # MAGIC * **`Target UC Schema Location`** (optional):
@@ -68,7 +64,7 @@
 # MAGIC   - Prerequisite:
 # MAGIC     - `CREATE MANAGED STORAGE` privilege on the external location
 # MAGIC * **`Target UC Schema Comment`** (optional):
-# MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.
+# MAGIC   - If `Create Target UC Schema` is filled with `Y`. You can add a description to your Schema.  
 
 # COMMAND ----------
 
@@ -78,28 +74,19 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Set Spark Configuration
-
-# COMMAND ----------
-
-spark.conf.set("spark.databricks.sync.command.enableManagedTable", "true")
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ## Set widgets
 
 # COMMAND ----------
 
 dbutils.widgets.removeAll()
-dbutils.widgets.text("source_schema", "", "Source Schema")
-dbutils.widgets.text("source_table", "", "Source Table(s)")
+dbutils.widgets.text("source_schema", "", "Source HMS Schema")
+dbutils.widgets.text("source_view", "", "Source HMS View")
 dbutils.widgets.dropdown("create_target_catalog", "N", ["N", "Y"], "Create Target UC Catalog")
 dbutils.widgets.text("target_catalog_comment", "", "Target UC Catalog Comment")
 dbutils.widgets.text("target_catalog", "", "Target UC Catalog")
 dbutils.widgets.text("target_catalog_location", "", "Target UC Catalog Location")
+dbutils.widgets.dropdown("create_target_schema", "N", ["N", "Y"], "Create Target UC Schema")
 dbutils.widgets.text("target_schema", "", "Target UC Schema")
-dbutils.widgets.dropdown("create_target_hms_schema", "N", ["N", "Y"], "Create Target HMS Schema")
 dbutils.widgets.text("target_schema_comment", "", "Target UC Schema Comment")
 dbutils.widgets.text("target_schema_location", "", "Target UC Schema Location")
 
@@ -111,15 +98,18 @@ dbutils.widgets.text("target_schema_location", "", "Target UC Schema Location")
 # COMMAND ----------
 
 source_schema = dbutils.widgets.get("source_schema")
-source_table = dbutils.widgets.get("source_table")
+source_view = dbutils.widgets.get("source_view")
 create_target_catalog = dbutils.widgets.get("create_target_catalog")
 target_catalog_comment = dbutils.widgets.get("target_catalog_comment")
 target_catalog = dbutils.widgets.get("target_catalog")
 target_catalog_location = dbutils.widgets.get("target_catalog_location")
 create_target_schema = dbutils.widgets.get("create_target_schema")
 target_schema_comment = dbutils.widgets.get("target_schema_comment")
-target_schema = dbutils.widgets.get("target_schema")
+target_schema =  dbutils.widgets.get("target_schema")
 target_schema_location = dbutils.widgets.get("target_schema_location")
+# Variables mustn't be changed
+source_catalog = "hive_metastore"
+table_type = "view"
 
 # COMMAND ----------
 
@@ -128,7 +118,7 @@ target_schema_location = dbutils.widgets.get("target_schema_location")
 
 # COMMAND ----------
 
-from utils.table_utils import sync_hms_external_table_to_uc_external
+from utils.table_utils import get_table_description, sync_view
 from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_detail
 
 # COMMAND ----------
@@ -145,24 +135,24 @@ from utils.common_utils import create_uc_catalog, create_uc_schema, get_schema_d
 
 # COMMAND ----------
 
-if create_target_catalog:
+if create_target_catalog == "Y":
   create_uc_catalog(spark, target_catalog, target_schema, target_catalog_location, target_catalog_comment)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Create Schema 
-# MAGIC **Only** if the `Create Schema` parameter is **`Y`**
+# MAGIC **Only** if the `Create Target UC Schema` parameter is **`Y`**
 # MAGIC - You have the `CREATE SCHEMA` privilege on the applicable catalog
-# MAGIC - You can create the schema on a default location (managed location)
+# MAGIC - You can create the schema on a default location (managed location) in Unity Catalog
 # MAGIC   - You have an external location
 # MAGIC   - If you have the `CREATE MANAGED STORAGE` privilege on the applicable external location
-# MAGIC   - If `Target Schema` and `Target UC Schema Location` are not given:
-# MAGIC     - Dynamically creates the schemas
+# MAGIC   - If `Target UC Schema` is not given:
+# MAGIC     - Dynamically creates the schema:
 # MAGIC       - If the source schema is in **DBFS**, it is being created in the default location
 # MAGIC       - If the source schema is in a **mount point**, it is being created in the abfss path of the mount point
 # MAGIC       - if the source schema is in **abfss path**, it is being created in that path.
-# MAGIC   - If `Target Schema` is given:
+# MAGIC     - If the `Target UC Schema` is given, it is created with that name.
 # MAGIC       - If `Target UC Schema Location` is filled with the right path, it is being created in that location.
 # MAGIC       - Otherwise, it is being created in the default location.
 # MAGIC     - **Note**: If you add a location for catalog and schema either, the schema location will be used.
@@ -172,18 +162,18 @@ if create_target_catalog:
 
 # COMMAND ----------
 
-if create_target_schema:
+if create_target_schema == "Y":
 
-    # If multiple schemas are given as source_schema and there is no target schema
+    # If there is no target schema
     if source_schema and not target_schema and not target_schema_location:
       
       # Get the schema details
-      schema_detail = get_schema_detail(spark, dbutils, schema)
+      schema_detail = get_schema_detail(spark, dbutils, source_schema)
       
       # Set target schema variables
       target_schema = getattr(schema_detail, "database")
-      target_schema_location = getattr(schema_detail, "external_location")
-      target_schema_comment = f"Migrated from hive_metastore.{schema} within the same location."
+      target_schema_location = getattr(schema_detail, "external_location")+f"/{target_schema}"
+      target_schema_comment = f"Migrated from hive_metastore.{source_schema} within the same location."
       
       # Create Unity Catalog target schema
       create_uc_schema(spark, target_catalog, target_schema, target_schema_location, target_schema_comment)
@@ -198,16 +188,48 @@ if create_target_schema:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Using the SYNC TABLE command to upgrade HMS table(s) (source_table) to external table(s) in Unity Catalog.
+# MAGIC ## Get the hive metastore vies(s)' descriptions
 # MAGIC
-# MAGIC  You can use it to create new table(s) in the given `Target Catalog` and `Target Schema` in Unity Catalog from the existing hive_metastore table(s) as well as update the Unity Catalog table(s) when the source table(s)' metadata in hive_metastore is changed.
-# MAGIC
-# MAGIC **Please be aware** that if the given `Source Table(s)` is not eligible for using `SYNC TABLE` command then an error will be thrown.
-# MAGIC
-# MAGIC **Important**: You need to run `SYNC TABLE` periodically if you want to keep seamlessly upgrading the UC table with the HMS table in any metadata changes. 
-# MAGIC
-# MAGIC  **Note**: Equality check between the legacy HMS table(s) and the UC table(s) will run
+# MAGIC Available options:
+# MAGIC - Get all views descriptions if the `Source HMS View(s)` parameter is empty
+# MAGIC - Get the given view(s) description if the `Source HMS View(s)` is filled
 
 # COMMAND ----------
 
-sync_hms_external_table_to_uc_external(spark, source_schema, source_table, target_catalog, target_schema)
+ view_descriptions = get_table_description(spark, source_catalog, source_schema, source_view, table_type)
+
+# COMMAND ----------
+
+view_descriptions
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Sync the Hive Metastore view(s) to Unity Catalog
+# MAGIC
+# MAGIC **Functionality**:
+# MAGIC - Replacing the target view and recreating it if:
+# MAGIC   - The source and target view definitions are different
+# MAGIC - Create the view if it doesn't exist
+# MAGIC
+# MAGIC **Prerequisites**:
+# MAGIC - The **Schema(s) has to exist with the same name in Unity Catalog**
+# MAGIC - The **tables with the same name have to exist in Unity Catalog within their same schema** as in the Hive Metastore
+
+# COMMAND ----------
+
+# Create empty sync status list
+sync_status_list = []
+# Iterate through the view descriptions
+for view_details in view_descriptions:
+  # Sync view
+  sync_status = sync_view(spark, view_details, target_catalog)
+  print(sync_status)
+  # Append sync status list
+  sync_status_list.append([sync_status.source_object_type, sync_status.source_object_full_name, sync_status.target_object_full_name, sync_status.sync_status_code, sync_status.sync_status_description])
+  # If sync status code FAILED, exit notebook
+  if sync_status.sync_status_code == "FAILED":
+    dbutils.notebook.exit(sync_status_list)
+
+# Exit notebook
+dbutils.notebook.exit(sync_status_list)
