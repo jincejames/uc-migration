@@ -200,10 +200,6 @@ if create_target_schema == "Y":
 
 # COMMAND ----------
 
-view_descriptions
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Sync the Hive Metastore view(s) to Unity Catalog
 # MAGIC
@@ -224,7 +220,6 @@ sync_status_list = []
 for view_details in view_descriptions:
   # Sync view
   sync_status = sync_view(spark, view_details, target_catalog)
-  print(sync_status)
   # Append sync status list
   sync_status_list.append([sync_status.source_object_type, sync_status.source_object_full_name, sync_status.target_object_full_name, sync_status.sync_status_code, sync_status.sync_status_description])
   # If sync status code FAILED, exit notebook

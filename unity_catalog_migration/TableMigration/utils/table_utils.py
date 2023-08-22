@@ -81,9 +81,11 @@ def get_table_description(spark: SparkSession, source_catalog: str, source_schem
     # Loop through each table and run the describe command
     for table in tables:
         table_name = table
+        full_table_name = f"{source_catalog}.{source_schema}.{table_name}"
+        print(f"Getting {full_table_name} descriptions using DESCRIBE FORMATTED command")
         # Read the Table description into DataFrame
         desc_df = (spark
-                  .sql(f"DESCRIBE FORMATTED {source_catalog}.{source_schema}.{table_name}")
+                  .sql(f"DESCRIBE FORMATTED {full_table_name}")
                   )
         
         # Create description dict
@@ -94,20 +96,22 @@ def get_table_description(spark: SparkSession, source_catalog: str, source_schem
         if table_type == "view":
           
           if desc_dict["Type"].lower() == "view":
+            print(f"{desc_dict['Table']} is a view, appending...")
             # Append table_descriptions
             table_descriptions.append(desc_dict)
-          
-        else:
-          # Create description dict
-          desc_dict = {row['col_name']:row['data_type'] for row in desc_df.collect()}
-
-          # Append table_descriptions
-          table_descriptions.append(desc_dict)
+        
+        # Filter table type to non-view  
+        elif desc_dict['Type'].lower() != "view": 
+            print(f"{desc_dict['Table']} is a table, appending...")
+            # Append table_descriptions
+            table_descriptions.append(desc_dict)
       
   except (ValueError, U.AnalysisException) as e:
     if isinstance(e, ValueError):
+      print(f"ValueError occurred: {e}")
       raise ValueError(f"ValueError occurred: {e}")
     elif isinstance(e, U.AnalysisException):
+      print(f"ValueError occurred: {e}")
       raise U.AnalysisException(f"AnalysisException occurred: {e}")
   return table_descriptions
 
@@ -292,6 +296,8 @@ def check_equality_of_hms_uc_table(spark: SparkSession, hms_schema: str, hms_tab
     hms_count = hms.count()
     uc_count = uc.count()
 
+    print(f"Check source and target tables equality...")
+
     # Check schema match
     if hms_schema_struct == uc_schema_struct:
       # Check volume match
@@ -382,6 +388,8 @@ def ctas_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: d
     # Clear all caches first
     spark.sql(f"REFRESH TABLE {hms_full_name}")
 
+    print(f"Migrating with CTAS ...")
+
     # Set the base CTAS statement
     create_table_as_statement = f"CREATE OR REPLACE TABLE {uc_full_name}"
 
@@ -435,6 +443,7 @@ def ctas_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: d
 
     # Set table properties if it's delta
     if hms_table_provider.lower() == "delta":
+      print("Setting TBLPROPERTIES ...")
       # Set current user and current timestamp
       current_u = spark.sql("SELECT current_user()").collect()[0][0]
       current_t = spark.sql("SELECT current_timestamp()").collect()[0][0]
@@ -465,10 +474,13 @@ def ctas_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: d
     # Set sync status
     sync_status.sync_status_description = f"Table has been created using CTAS statement {create_table_as_statement}"
     sync_status.sync_status_code = "SUCCESS"
+
+    print(f"Migrating table via CTAS has successfully finished")
       
   except Exception:
     sync_status.sync_status_code = "FAILED"
     sync_status.sync_status_description = str(traceback.format_exc())
+    print(str(traceback.format_exc()))
   
   return sync_status
 
@@ -533,6 +545,9 @@ def clone_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: 
                         CREATE OR REPLACE TABLE {uc_full_name}
                         DEEP CLONE {hms_full_name}
                         """
+
+    print("Migrating with CLONE ...")
+    
     # If target location is given, add LOCATION to the deep clone statement and create external table
     if target_location:
         print(f"Migrating {hms_table_type} {hms_full_name} table to External {uc_full_name} in location {target_location} using DEEP CLONE")
@@ -560,7 +575,7 @@ def clone_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: 
 
     # Set table properties if it's delta
     if hms_table_provider.lower() == "delta":
-        
+        print("Setting TBLPROPERTIES ... ")
         set_table_properties_statement = f"""
                                         ALTER TABLE {hms_full_name} 
                                         SET TBLPROPERTIES ('cloned_to' = '{uc_full_name}',
@@ -570,18 +585,19 @@ def clone_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: 
                                         """
         print(f"Executing '{set_table_properties_statement}' ...")
         # Execute set table properties
-        
         spark.sql(set_table_properties_statement)
 
     # Check the match of hive_metastore and UC tables
     check_equality_of_hms_uc_table(spark, hms_schema, hms_table, uc_catalog, uc_schema, uc_table)
 
     sync_status.sync_status_code = "SUCCESS"
+
+    print(sync_status.sync_status_description)
   
   except Exception:
       sync_status.sync_status_code = "FAILED"
       sync_status.sync_status_description = str(traceback.format_exc())
-  
+      print(str(traceback.format_exc()))
   return sync_status
 
 
@@ -629,12 +645,15 @@ def convert_parquet_table_to_delta(spark: SparkSession, dbutils: DBUtils, table_
         # Clear all caches first
         spark.sql(f"REFRESH TABLE {full_table_name}")
 
+        print(f"Converting Parquet to Delta ...")
+
         # Check if table provider hive and it is parquet
         if table_provider.lower() == "hive":
             if (
                 table_serde
                 == "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
             ):
+                print(f"Source table format is Hive with Serde Parquet. Changing to Parquet format..")                        
                 table_provider = "PARQUET"
 
         if table_provider.lower() != "parquet":
@@ -648,8 +667,10 @@ def convert_parquet_table_to_delta(spark: SparkSession, dbutils: DBUtils, table_
         convert_to_delta_stmt = f"CONVERT TO DELTA {full_table_name} NO STATISTICS"
 
         # Execute convert to delta statement
+        print(f"Executing '{convert_to_delta_stmt}' ...")
         spark.sql(convert_to_delta_stmt)
 
+        print("Setting TBLPROPERTIES...")
         # Set current user and current timestamp
         current_u = spark.sql("SELECT current_user()").collect()[0][0]
         current_t = spark.sql("SELECT current_timestamp()").collect()[0][0]
@@ -743,10 +764,11 @@ def sync_view(spark: SparkSession, view_details: dict, target_catalog: str) -> S
         source_view_definition = view_details["View Text"]
         sync_status.source_view_text = source_view_definition
 
+        print(f"Syncing view...")
         # TODO: Check the schemas, tables in the view definition and add the catalog name before them as a three-level namespace. Use system information schema.
         # Currently, replacing hive_metastore with the target catalog
+        print(f"Replacing {source_catalog} with {target_catalog}")
         source_view_definition = source_view_definition.replace(source_catalog, target_catalog)
-        print(f"changed source view def: {source_view_definition}")
 
         # Set target variables and sync status
         target_schema = source_schema
@@ -766,7 +788,7 @@ def sync_view(spark: SparkSession, view_details: dict, target_catalog: str) -> S
 
         # Set catalog
         use_catalog_stmt = f"USE CATALOG {target_catalog}"
-        print(f"Using catalog {target_catalog}")
+        print(f"Executing {use_catalog_stmt}...")
         spark.sql(use_catalog_stmt)
 
         # Check if target view exists
@@ -775,6 +797,7 @@ def sync_view(spark: SparkSession, view_details: dict, target_catalog: str) -> S
         # If target view exists, checking view definitions
         if target_view_exists:
 
+            print("Target view exists. Checking for view definition change...")
             # Get target view description
             target_table_details = (spark.sql(f"DESCRIBE TABLE EXTENDED {target_full_name}"))
 
@@ -809,15 +832,19 @@ def sync_view(spark: SparkSession, view_details: dict, target_catalog: str) -> S
 
                 sync_status.sync_status_code = "SUCCESS"
 
+                print(sync_status.sync_status_description)
+
                 return sync_status
 
         # If target view doesn't exist, set sync status to creating
         if not target_view_exists:
             sync_status.sync_status_description = f"Create view since it doesn't exist."
+            print(sync_status.sync_status_description)
 
         # Set the create or replace view statement
         create_or_replace_view_stmt = f"CREATE OR REPLACE VIEW {target_full_name} AS {source_view_definition}"
         
+        print(f"Executing '{create_or_replace_view_stmt}'...")
         # Execute the create or replace view statement
         spark.sql(create_or_replace_view_stmt)
 
@@ -897,6 +924,8 @@ def sync_table(spark: SparkSession, dbutils: DBUtils, table_details: dict, targe
     # Clear all caches first
     spark.sql(f"REFRESH TABLE {source_full_name}")
 
+    print(f"Syncing table...")
+
     # Process known hive serdes
     if source_table_provider == "hive":
         if not source_table_serde:
@@ -906,9 +935,11 @@ def sync_table(spark: SparkSession, dbutils: DBUtils, table_details: dict, targe
         elif (
             source_table_serde == "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
         ):
+            print(f"Source table format is Hive with Serde Parquet. Changing to Parquet format..")
             source_table_provider = "PARQUET"
             sync_status.source_table_format = source_table_provider
         elif s_serde == "org.apache.hadoop.hive.serde2.avro.AvroSerDe":
+            print(f"Source table format is Hive with Serde Avro. Changing to Avro format..")
             source_table_provider = "AVRO"
             sync_status.source_table_format = source_table_provider
         else:      
@@ -920,6 +951,8 @@ def sync_table(spark: SparkSession, dbutils: DBUtils, table_details: dict, targe
     target_table_exists = True if [t for t in spark.sql(f"SHOW TABLES in {target_catalog}.{target_schema}").filter((F.col("isTemporary") == 'false') & (F.col("tableName") == f'{target_table}')).collect()] else False
 
     if target_table_exists:
+
+      print("Target table exists. Checking for table changes in schema or format...")
 
       # Clear all caches first
       spark.sql(f"REFRESH TABLE {source_full_name}")
@@ -951,7 +984,6 @@ def sync_table(spark: SparkSession, dbutils: DBUtils, table_details: dict, targe
                   f"Target table '{target_full_name}' format '{target_table_provider}' does not match with source table '{source_full_name}' format '{source_table_provider}', marking '{target_full_name}' for drop"
               )
         sync_status.sync_status_description = f"DROP and CREATE table due to differences in formats (target is '{target_table_provider}', source is '{source_table_provider}')"
-        
         drop_target_table = True
 
       # If formats are same, continue to check for schema differences
@@ -1008,7 +1040,8 @@ def sync_table(spark: SparkSession, dbutils: DBUtils, table_details: dict, targe
         print(f"Executing '{create_delta_table_statement}' ...")
         spark.sql(create_delta_table_statement)
         
-        # Execute set table properties 
+        # Execute set table properties
+        print("Setting TBLPROPERTIES...") 
         set_delta_table_properties_statement = (f"""
                                                 ALTER TABLE {source_full_name} 
                                                 SET TBLPROPERTIES ('synced_to' = '{target_full_name}',

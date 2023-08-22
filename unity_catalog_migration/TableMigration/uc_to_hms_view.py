@@ -170,9 +170,11 @@ sync_status_list = []
 for view_details in view_descriptions:
   # Sync view
   sync_status = sync_view(spark, view_details, target_catalog)
+  # Append sync status list
+  sync_status_list.append([sync_status.source_object_type, sync_status.source_object_full_name, sync_status.target_object_full_name, sync_status.sync_status_code, sync_status.sync_status_description])
   # If sync status code FAILED, exit notebook
   if sync_status.sync_status_code == "FAILED":
-    dbutils.notebook.exit([sync_status.sync_status_code, sync_status.sync_status_description])
+    dbutils.notebook.exit(sync_status_list)
 
 if sync_status.sync_status_code == "SUCCESS":
-  dbutils.notebook.exit([sync_status.sync_status_code, sync_status.sync_status_description])
+  dbutils.notebook.exit(sync_status_list)
