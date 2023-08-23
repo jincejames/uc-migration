@@ -418,8 +418,6 @@ def ctas_hms_table_to_uc(spark: SparkSession, dbutils: DBUtils, table_details: d
     # LOCATION
     if target_location:
       create_table_as_statement += f" LOCATION '{target_location}'"
-    elif location:
-        create_table_as_statement += f" LOCATION '{location}'"
 
     # COMMENT
     if comment:
